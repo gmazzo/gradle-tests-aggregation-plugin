@@ -39,6 +39,16 @@ import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 
 internal object AndroidSupport {
 
+    private val classesArtifact by lazy {
+        try {
+            ScopedArtifact.POST_COMPILATION_CLASSES
+
+        } catch (_: NoClassDefFoundError) {
+            // AGP 8.3 and below
+            ScopedArtifact.CLASSES
+        }
+    }
+
     val Project.jacocoDependency
         get() = the<CommonExtension>().testCoverage.jacocoVersion
             .let { dependencies.create(BuildConfig.JACOCO_ANT_DEPENDENCY.first + ':' + it) }
@@ -220,7 +230,7 @@ internal object AndroidSupport {
             androidVariant.artifacts
                 .forScope(ScopedArtifacts.Scope.PROJECT)
                 .use(classesTask)
-                .toGet(ScopedArtifact.CLASSES, { classesJars }) { classesDirs }
+                .toGet(classesArtifact, { classesJars }) { classesDirs }
 
             val variant = report.variants.maybeCreate(androidVariant.kmpAwareName)
             variant.dependsOn(classesTask)
