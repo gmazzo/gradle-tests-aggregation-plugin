@@ -182,8 +182,10 @@ public final class io/github/gmazzo/test/aggregation/TestAggregationResultsRepor
 public final class org/gradle/kotlin/dsl/AndroidTestAggregationDSLKt {
 	public static final fun addAndroidVariant (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport;Lcom/android/build/api/variant/Variant;)V
 	public static final fun addAndroidVariant (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport;Lcom/android/build/api/variant/Variant;)V
+	public static final fun getAggregateConnectedDevices (Lcom/android/build/api/dsl/TestOptions;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTestCoverage (Lcom/android/build/api/dsl/BuildType;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTestCoverage (Lcom/android/build/api/dsl/ProductFlavor;)Lorg/gradle/api/provider/Property;
+	public static final fun getAggregateTests (Lcom/android/build/api/dsl/Device;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/variant/TestComponent;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/variant/Variant;)Lorg/gradle/api/provider/Property;
 }

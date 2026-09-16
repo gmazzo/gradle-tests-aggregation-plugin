@@ -2,6 +2,7 @@ package io.github.gmazzo.test.aggregation
 
 import com.android.build.api.extension.impl.CurrentAndroidGradlePluginVersion
 import com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION
+import java.lang.ref.WeakReference
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -38,25 +39,23 @@ private val agpVersion
         }
     }.replace("-.*$".toRegex(), "")
 
-@Suppress("UNCHECKED_CAST")
-internal fun ExtensionAware.aggregateTests(objects: ObjectFactory) =
-    when (val existing = extensions.findByName(AGGREGATE_EXTENSION_NAME)) {
-        null -> objects.property<Boolean>()
-            .convention(true)
-            .apply { finalizeValueOnRead() }
-            .also { aggregateTests = it }
+internal lateinit var objectsRef: WeakReference<ObjectFactory>
 
-        else -> existing as Property<Boolean>
+private val objects: ObjectFactory
+    get() = checkNotNull(objectsRef.get()) {
+        "Apply the 'io.github.gmazzo.test.aggregation' plugin before accessing the 'objects' property"
     }
 
 @Suppress("UNCHECKED_CAST")
-internal var ExtensionAware.aggregateTests: Property<Boolean>
-    get() = extensions.getByName(AGGREGATE_EXTENSION_NAME) as Property<Boolean>
-    set(value) {
-        when (val existing = extensions.findByName(AGGREGATE_EXTENSION_NAME)) {
-            null -> extensions.add(typeOf<Property<Boolean>>(), AGGREGATE_EXTENSION_NAME, value)
-            else -> check(existing === value)
-        }
+internal val ExtensionAware.aggregateTests: Property<Boolean>
+    get() = when (val existing = extensions.findByName(AGGREGATE_EXTENSION_NAME)) {
+        null -> objects
+            .property<Boolean>()
+            .convention(true)
+            .apply { finalizeValueOnRead() }
+            .also { extensions.add(typeOf<Property<Boolean>>(), AGGREGATE_EXTENSION_NAME, it) }
+
+        else -> existing as Property<Boolean>
     }
 
 internal fun <Type : Task> Type.coverageData(

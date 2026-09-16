@@ -3,9 +3,12 @@
 package io.github.gmazzo.test.aggregation
 
 import io.github.gmazzo.test.aggregation.TestAggregationResultsReport.Variant
+import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
+import kotlin.io.path.exists
+import kotlin.io.path.name
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.internal.tasks.testing.junit.result.JUnitXmlResultOptions
@@ -75,16 +78,39 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
 
         val options = JUnitXmlResultOptions(true, true, true, true)
 
+        fun generate(binaryDir: Path, reportDir: Path) = objects
+            .newInstance<JunitXmlTestReportGenerator>(reportDir, options)
+            .generate(listOf(binaryDir))
+
         for (variant in variants.get()) {
-            val generator = objects.newInstance<JunitXmlTestReportGenerator>(
-                outputDir.resolve(variant.name.replace(':', '_')),
-                options
-            )
-            generator.generate(variant.binaryDataDirs)
+            val variantOutDir = outputDir.resolve(variant.name.replace(':', '_'))
+            val binaryDirs = variant.binaryDataDirs
+
+            when (binaryDirs.size) {
+                1 -> generate(binaryDirs.single(), variantOutDir)
+                else -> {
+                    val used = mutableMapOf<String, Int>()
+                    for (binaryDir in binaryDirs) {
+                        val count = used.compute(binaryDir.name) { _, count -> (count ?: 0) + 1 }
+                        val name = when (count) {
+                            1 -> binaryDir.name
+                            else -> "${binaryDir.name}-$count"
+                        }
+                        generate(binaryDir, variantOutDir.resolve(name))
+                    }
+                }
+            }
         }
     }
 
     private val Variant.binaryDataDirs
-        get() = binaryData.asFileTree.mapTo(linkedSetOf()) { it.parentFile.toPath() }.toList()
+        get() = binaryData.asFileTree.mapNotNullTo(linkedSetOf()) {
+            it.parentFile.toPath().takeIf { dir ->
+                // TODO check if it's possible to transform Android's device tests format to Gradle's one
+                // expected files from SerializableTestResultStore
+                dir.resolve("results-generic.bin").exists() &&
+                    dir.resolve("output-events.bin").exists()
+            }
+        }
 
 }

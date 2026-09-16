@@ -1,11 +1,13 @@
 package io.github.gmazzo.test.aggregation
 
 import java.io.File
+import java.lang.ref.WeakReference
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConfigurablePublishArtifact
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ConfigurationPublications
 import org.gradle.api.artifacts.ConfigurationVariant
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
@@ -56,6 +58,8 @@ public class TestAggregationBasePlugin : Plugin<Project> {
     }
 
     override fun apply(target: Project): Unit = with(target) {
+        objectsRef = WeakReference(objects)
+
         apply(plugin = "reporting-base")
 
         val jacocoAntConfig = configurations.dependencyScope("aggregatedTestCoverageJacocoAnt") {
@@ -99,8 +103,6 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                 reporting.reports.withType<TestAggregationCoverageReport>(),
             )
         }
-
-        // TODO add Java Features support
 
         plugins.withId("org.jetbrains.kotlin.multiplatform") {
             with(KMPSupport) { installBase() }
@@ -283,62 +285,75 @@ public class TestAggregationBasePlugin : Plugin<Project> {
 
                 this@configure.variants.all variant@{
                     when (this@variant) {
-                        is TestAggregationResultsReport.Variant -> {
-                            variants.create("${this@variant.name}-binary-results") {
-                                attributes {
-                                    allOf(this@config)
-                                    attribute(REPORT_VARIANT_ATTRIBUTE, this@variant.name)
-                                    attribute(
-                                        VERIFICATION_TYPE_ATTRIBUTE,
-                                        objects.named(TEST_RESULTS)
-                                    )
-                                }
-                                artifacts(this@variant.binaryData.elements) {
-                                    builtBy(this@variant.dependsOn)
-                                }
-                            }
-                        }
-
-                        is TestAggregationCoverageReport.Variant -> {
-                            variants.create("${this@variant.name}-classes") {
-                                attributes {
-                                    allOf(this@config)
-                                    attribute(REPORT_VARIANT_ATTRIBUTE, this@variant.name)
-                                    attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(CLASSES))
-                                }
-                                artifacts(this@variant.classes.elements) {
-                                    builtBy(this@variant.dependsOn)
-                                }
-                            }
-                            variants.create("${this@variant.name}-main-sources") {
-                                attributes {
-                                    allOf(this@config)
-                                    attribute(REPORT_VARIANT_ATTRIBUTE, this@variant.name)
-                                    attribute(
-                                        VERIFICATION_TYPE_ATTRIBUTE,
-                                        objects.named(MAIN_SOURCES)
-                                    )
-                                }
-                                artifacts(this@variant.sources.elements) {
-                                    builtBy(this@variant.dependsOn)
-                                }
-                            }
-                            variants.create("${this@variant.name}-coverage-data") {
-                                attributes {
-                                    allOf(this@config)
-                                    attribute(REPORT_VARIANT_ATTRIBUTE, this@variant.name)
-                                    attribute(
-                                        VERIFICATION_TYPE_ATTRIBUTE,
-                                        objects.named(JACOCO_RESULTS)
-                                    )
-                                }
-                                artifacts(this@variant.coverageData.elements) {
-                                    builtBy(this@variant.dependsOn)
-                                }
-                            }
-                        }
+                        is TestAggregationResultsReport.Variant -> createResultsVariant()
+                        is TestAggregationCoverageReport.Variant -> createCoverageVariant()
                     }
                 }
+            }
+        }
+    }
+
+    context(
+        project: Project,
+        variant: TestAggregationResultsReport.Variant,
+        config: Configuration,
+    )
+    private fun ConfigurationPublications.createResultsVariant() {
+        variants.create("${variant.name}-binary-results") {
+            attributes {
+                allOf(config)
+                attribute(REPORT_VARIANT_ATTRIBUTE, variant.name)
+                attribute(
+                    VERIFICATION_TYPE_ATTRIBUTE,
+                    project.objects.named(TEST_RESULTS)
+                )
+            }
+            artifacts(variant.binaryData.elements) {
+                builtBy(variant.dependsOn)
+            }
+        }
+    }
+
+    context(
+        project: Project,
+        variant: TestAggregationCoverageReport.Variant,
+        config: Configuration,
+    )
+    private fun ConfigurationPublications.createCoverageVariant() {
+        variants.create("${variant.name}-classes") {
+            attributes {
+                allOf(config)
+                attribute(REPORT_VARIANT_ATTRIBUTE, variant.name)
+                attribute(LIBRARY_ELEMENTS_ATTRIBUTE, project.objects.named(CLASSES))
+            }
+            artifacts(variant.classes.elements) {
+                builtBy(variant.dependsOn)
+            }
+        }
+        variants.create("${variant.name}-main-sources") {
+            attributes {
+                allOf(config)
+                attribute(REPORT_VARIANT_ATTRIBUTE, variant.name)
+                attribute(
+                    VERIFICATION_TYPE_ATTRIBUTE,
+                    project.objects.named(MAIN_SOURCES)
+                )
+            }
+            artifacts(variant.sources.elements) {
+                builtBy(variant.dependsOn)
+            }
+        }
+        variants.create("${variant.name}-coverage-data") {
+            attributes {
+                allOf(config)
+                attribute(REPORT_VARIANT_ATTRIBUTE, variant.name)
+                attribute(
+                    VERIFICATION_TYPE_ATTRIBUTE,
+                    project.objects.named(JACOCO_RESULTS)
+                )
+            }
+            artifacts(variant.coverageData.elements) {
+                builtBy(variant.dependsOn)
             }
         }
     }

@@ -2,6 +2,7 @@ import com.android.build.api.dsl.CommonExtension
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
 import io.github.gmazzo.test.aggregation.TestAggregationCoverageReport
+import org.jetbrains.kotlin.gradle.fus.internal.isCiBuild
 
 buildscript {
     dependencies {
@@ -31,12 +32,18 @@ dependencies {
 
 subprojects {
     plugins.withId("com.android.base") {
-        configure<CommonExtension> {
-            testOptions.managedDevices.localDevices.register("emulator") {
+        the<CommonExtension>().testOptions.managedDevices.localDevices {
+            configureEach {
                 device = "Pixel 10"
                 apiLevel = 33
                 systemImageSource = "aosp_atd"
+                aggregateTests = !isCiBuild() // TODO figure out how to make it work
             }
+            register("emulator")
+            register("emulator2") {
+                aggregateTests = false
+            }
+            register("emulator3")
         }
     }
 }

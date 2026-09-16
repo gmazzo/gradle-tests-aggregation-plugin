@@ -16,7 +16,7 @@ internal abstract class DefaultTestAggregationCoverageReport @Inject constructor
     override lateinit var reportTask: TaskProvider<AggregatedTestCoverageTask>
 
     override fun addTestSuite(mainSources: SourceSet, testSuite: JvmTestSuite): Variant {
-        val mainAggregate = (mainSources as ExtensionAware).aggregateTests(objects)
+        val mainAggregate = (mainSources as ExtensionAware).aggregateTests
 
         val variant = variants.maybeCreate(mainSources.name)
         variant.dependsOn(mainSources.classesTaskName)
@@ -25,15 +25,20 @@ internal abstract class DefaultTestAggregationCoverageReport @Inject constructor
         variant.classes.from(mainSources.output.classesDirs)
 
         testSuite.targets.all target@{
-            val suiteAggregate = (testSuite as ExtensionAware).aggregateTests(objects)
+            val suiteAggregate = (testSuite as ExtensionAware).aggregateTests
                 .convention(mainAggregate)
 
-            variant.dependsOn(suiteAggregate.map { if (it) testTask else emptyArray<Any>() })
-            variant.coverageData.from(suiteAggregate.zip(testTask) { agg, task ->
-                task.takeIf { agg }?.coverageData() ?: emptyArray<Any>()
+            variant.dependsOn(testTask.map {
+                if (it.aggregateTests.get()) it else emptyArray<Any>()
+            })
+            variant.coverageData.from(testTask.map {
+                (if (it.aggregateTests.get()) it.coverageData() else null) ?: emptyArray<Any>()
             })
 
-            testTask.configure task@{ this@task.aggregateTests = suiteAggregate }
+            testTask.configure task@{
+                this@task.aggregateTests
+                    .convention(suiteAggregate)
+            }
         }
         return variant
     }

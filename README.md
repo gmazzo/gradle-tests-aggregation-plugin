@@ -9,12 +9,14 @@
 
 # gradle-tests-aggregation-plugin
 
-A Gradle plugin to simplify test aggregations across multiple modules and its variants (e.g. JVM test suites, Android Variants or Kotlin Multiplatform's Targets) in Android projects.
+A Gradle plugin to simplify test aggregations across multiple modules and its variants (e.g. JVM
+test suites, Android Variants or Kotlin Multiplatform's Targets) in Android projects.
 
 > [^NOTE]
 > *Disclaimer*: since version `3.x`, this plugin no longer relies on
 > [JaCoCo Report Aggregation Plugin](https://docs.gradle.org/current/userguide/jacoco_report_aggregation_plugin.html)
-> neither on [Test Report Aggregation Plugin](https://docs.gradle.org/current/userguide/test_report_aggregation_plugin.html)
+> neither
+> on [Test Report Aggregation Plugin](https://docs.gradle.org/current/userguide/test_report_aggregation_plugin.html)
 > due technical limitations of the Gradle API.
 > See [migration guide](MIGRATION-3.x.md) for more details.
 
@@ -24,40 +26,48 @@ Apply the plugin on all the projects that needs to be aggregated and/or at the r
 
 ```kotlin
 plugins {
-    id("io.github.gmazzo.test.aggregation") version "<latest>"
+  id("io.github.gmazzo.test.aggregation") version "<latest>"
 }
 ```
 
 Then use the `aggregatedTestsReport` to generate the reports (at its default locations):
+
 - `build/reports/aggregated-test-coverage` for coverage
 - `build/reports/aggregated-test-results` for test results
 
 The plugin will automatically detect and aggregate:
+
 - For `java` projects:
   - Any `JvmTestSuite` will be automatically aggregated
   - For coverage:
     - The `jacoco` plugin is required
     - Because API limitations, only the default `test` jvm suite will be automatically computed
-    - You can register further jvm suites through the `io.github.gmazzo.test.aggregation.TestAggregationCoverageReport.addTestSuite` API
-- For `com.android.application`, `com.android.library` and `com.android.library.multiplatform` projects:
-  - Any `Variant` which its `BuilType` has `enableUnitTestCoverage = true` and/or `enableAndroidTestCoverage = true` configured
-  - Any `Variant` with either `HostTest` or `DeviceTest` test components
+    - You can register further jvm suites through the
+      `io.github.gmazzo.test.aggregation.TestAggregationCoverageReport.addTestSuite` API
+- For `com.android.application`, `com.android.library` and `com.android.library.multiplatform`
+  projects:
+  - Any `Variant` which its `BuilType` has `enableUnitTestCoverage = true` and/or
+    `enableAndroidTestCoverage = true` configured
+  - Any `Variant` with either `HostTest` or `DeviceTest` test components. (for `DeviceTest`s, their
+    test will only be aggregated if its test `Task` is run)
 - For `org.jetbrains.kotlin.multiplatform` projects:
   - Any `KotlinTarget` that with tests. Coverage is only supported for JVM-based ones.
 
 ## Aggregating other modules
 
-Besides the variants of a single module, you can also aggregate test results and coverage
-from other modules of the build in a single root report.
+Besides the variants of a single module, you can also aggregate test results and coverage from other
+modules of the build in a single root report.
 
 For this, you can use the `aggregateTestsFrom` configuration to declare a dependency to the modules
 to be aggregated:
+
 ```kotlin
 dependencies {
-    aggregateTestsFrom(project(":foo"))
-    aggregateTestsFrom(project(":bar"))
+  aggregateTestsFrom(project(":foo"))
+  aggregateTestsFrom(project(":bar"))
 }
 ```
+
 > [^IMPORTANT]
 > Keep in mind that every referenced module must also apply the plugin,
 > the report will fail otherwise.
@@ -76,17 +86,17 @@ reporting.reports.withType<TestAggregationCoverageReport>().configureEach {
 }
 ```
 
-It's important to realize the filtering is done at `.class` file level (compiled classes).
-You should not use classes names here but GLOB patterns.
+It's important to realize the filtering is done at `.class` file level (compiled classes). You
+should not use classes names here but GLOB patterns.
 
 ## Producing an aggregated report for the whole project
 
-This following a is a basic and quick configuration for generating an aggregated report for
-all modules of the build, at the root project add:
+This following a is a basic and quick configuration for generating an aggregated report for all
+modules of the build, at the root project add:
 
 ```kotlin
 plugins {
-    id("io.github.gmazzo.test.aggregation")
+  id("io.github.gmazzo.test.aggregation")
 }
 
 dependencies {
@@ -95,27 +105,32 @@ dependencies {
   }
 }
 ```
+
 Then run:
+
 ```shell
 ./gradlew aggregateTestsFrom
 ```
 
 ## Choosing which variants of each module are aggregated
 
-By default, any detected variant (JVM test suites, Android Variant or Kotlin Target) will be aggregated.
+By default, any detected variant (JVM test suites, Android Variant or Kotlin Target) will be
+aggregated.
 
 However, you can filter which variants are aggregated by using the `aggregateTests` API:
 
 For Java:
+
 ```kotlin
 testing.suites.create<JvmTestSuite>("integrationTest") {
-    aggregateTests = false // this suite will not be aggregated
+  aggregateTests = false // this suite will not be aggregated
 }
 ```
 
 For Android:
+
 ```kotlin
-androidComponents{
+androidComponents {
   onVariants { variant ->
     variant.aggregateTests = false
   }
@@ -123,14 +138,43 @@ androidComponents{
 ```
 
 For Kotlin Multiplatform:
+
 ```kotlin
 kotlin {
-    android {
-      aggregateTests = false
+  android {
+    aggregateTests = false
+  }
+  jvm()
+  js {
+    aggregateTests = false
+  }
+}
+```
+
+### Aggregating Android's device tests
+
+Device tests aggregation can be optionally enabled through the DSL.
+
+To consume the results of connected devices, set:
+
+```kotlin
+testOptions {
+  aggregateConnectedDevices = true
+}
+```
+
+> [^CAUTION]
+> With this set, the build will fail if no connected devices are available.
+
+Also, [Managed Devices](https://developer.android.com/studio/test/managed-devices) are supported.
+
+You can aggregate them with `aggregateTests` DSL:
+```kotlin
+android {
+  testOptions {
+    managedDevices.localDevices.all {
+      aggregateTests = true
     }
-    jvm()
-    js {
-      aggregateTests = false
-    }
+  }
 }
 ```

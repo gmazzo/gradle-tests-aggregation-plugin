@@ -19,6 +19,7 @@ import org.gradle.api.Task
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.AbstractTestTask
@@ -26,11 +27,10 @@ import org.gradle.kotlin.dsl.addAndroidVariant
 import org.gradle.kotlin.dsl.aggregateTests
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByName
-import org.gradle.kotlin.dsl.gradleExtensions
 import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.property
 import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.the
+import org.gradle.kotlin.dsl.setProperty
 import org.gradle.kotlin.dsl.typeOf
 import org.gradle.kotlin.dsl.withType
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
@@ -42,31 +42,34 @@ internal object AndroidSupport {
             addRobolectricTestsSupport()
         }
 
+        val aggregatedDevices = computeAggregatedDevices()
+
         reports.withType<TestAggregationResultsReport> report@{
             (this@report as ExtensionAware).extensions
                 .add(
                     typeOf<TestAggregationReportAndroidExtension>(),
                     "addAndroidVariant",
-                    ResultsExtension(project, this@report)
+                    ResultsExtension(project, this@report, aggregatedDevices)
                 )
         }
+
         reports.withType<TestAggregationCoverageReport> report@{
             (this@report as ExtensionAware).extensions
                 .add(
                     typeOf<TestAggregationReportAndroidExtension>(),
                     "addAndroidVariant",
-                    CoverageExtension(project, this@report)
+                    CoverageExtension(project, this@report, aggregatedDevices)
                 )
         }
 
         androidComponents.onVariants { variant ->
-            val variantAggregate = variant.gradleExtensions.aggregateTests(objects)
+            val variantAggregate = variant.aggregateTests
 
             for (testComponent in variant.nestedComponents) {
                 if (testComponent !is TestComponent) continue
 
-                testComponent.gradleExtensions.aggregateTests(objects)
-                    .convention(variantAggregate.map { it && testComponent.shouldAggregateByDefault })
+                testComponent.aggregateTests
+                    .convention(variantAggregate)
             }
         }
     }
@@ -84,7 +87,6 @@ internal object AndroidSupport {
     }
 
     private fun Project.addRobolectricTestsSupport() {
-        val android = the<CommonExtension>()
         val robolectricSupport = objects.property<Boolean>()
             .convention(true)
             .apply { finalizeValueOnRead() }
@@ -105,26 +107,63 @@ internal object AndroidSupport {
         }
     }
 
-    private fun Project.testTasksOf(component: TestComponent, configure: Action<Task>) =
-        when (component) {
-            is HostTest -> project
-                .tasksMatching(
-                    regex = "(test|validate)${Regex.escape(component.name.capitalized)}".toRegex(),
-                    configure
-                )
+    private fun Project.computeAggregatedDevices() = objects
+        .setProperty<String>()
+        .apply { finalizeValueOnRead() }
+        .also { devices ->
+            val testOptions = android?.testOptions ?: return@also
 
-            // TODO add managed devices support
-            is DeviceTest -> project
-                .tasksMatching(name = "connected${component.name.capitalized}", configure)
+            val aggregateConnected = objects.property<Boolean>()
+                .convention(false)
+                .also {
+                    (testOptions as ExtensionAware).extensions.add(
+                        "aggregateConnectedDevices",
+                        it
+                    )
+                }
 
-            else -> provider { emptyList() }
+            devices.addAll(aggregateConnected.map {
+                if (it) listOf("connected") else emptyList()
+            })
+
+            testOptions.managedDevices.allDevices.configureEach device@{
+                val aggregateDevice = (this@device as ExtensionAware).aggregateTests
+                    .convention(false)
+
+                devices.addAll(aggregateDevice.map {
+                    if (it) listOf(this@device.name) else emptyList()
+                })
+            }
         }
+
+    private fun Project.testTasksOf(
+        devices: Set<String>,
+        component: TestComponent,
+        configure: Action<Task>,
+    ) = when (component) {
+        is HostTest -> project.tasksMatching(
+            regex = "(test|validate)${Regex.escape(component.name.capitalized)}".toRegex(),
+            configure
+        )
+
+        is DeviceTest -> project.tasksMatching(
+            regex = devices.joinToString(
+                prefix = "(",
+                separator = "|",
+                postfix = ")${Regex.escape(component.name.capitalized)}",
+                transform = Regex::escape
+            ).toRegex(),
+            configure
+        )
+
+        else -> provider { emptyList() }
+    }
+
+    private val Project.android
+        get() = extensions.findByName("android") as CommonExtension?
 
     private val Project.androidComponents
         get() = extensions.getByName<AndroidComponentsExtension<*, *, *>>("androidComponents")
-
-    private val TestComponent.shouldAggregateByDefault
-        get() = this is HostTest
 
     private val Project.isKMP
         get() = plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")
@@ -141,22 +180,28 @@ internal object AndroidSupport {
     class ResultsExtension(
         private val project: Project,
         private val report: TestAggregationResultsReport,
+        private val devices: SetProperty<String>,
     ) : TestAggregationReportAndroidExtension {
 
         override fun invoke(androidVariant: AndroidVariant) {
             for (testComponent in androidVariant.testComponents) {
-                val testTask = project.testTasksOf(testComponent) task@{
-                    this@task.aggregateTests = testComponent.aggregateTests
+                val testTasks = project.testTasksOf(devices.get(), testComponent) task@{
+                    this@task.aggregateTests
+                        .convention(testComponent.aggregateTests)
                 }
 
                 val variant = report.variants.maybeCreate(testComponent.name)
-                variant.dependsOn(testTask)
-                variant.aggregate.convention(testComponent.aggregateTests)
-                variant.binaryData.from(testTask.map { list ->
+                variant.dependsOn(testTasks.map { list ->
                     list.mapNotNull {
-                        when (it) {
-                            is AbstractTestTask -> it.binaryResultsDirectory
-                            is AndroidTestTask -> it.resultsDir
+                        if (it.aggregateTests.get()) it else null
+                    }
+                })
+                variant.aggregate.convention(testComponent.aggregateTests)
+                variant.binaryData.from(testTasks.map { list ->
+                    list.mapNotNull { task ->
+                        when (val task = task.takeIf { it.aggregateTests.get() }) {
+                            is AbstractTestTask -> task.binaryResultsDirectory
+                            is AndroidTestTask -> task.resultsDir
                             else -> null
                         }
                     }
@@ -169,6 +214,7 @@ internal object AndroidSupport {
     class CoverageExtension(
         private val project: Project,
         private val report: TestAggregationCoverageReport,
+        private val devices: SetProperty<String>,
     ) : TestAggregationReportAndroidExtension {
 
         override fun invoke(androidVariant: AndroidVariant) {
@@ -196,14 +242,19 @@ internal object AndroidSupport {
 
             for (testComponent in androidVariant.testComponents) {
                 val testAggregate = testComponent.aggregateTests
-                val testTask = project.testTasksOf(testComponent) task@{
-                    this@task.aggregateTests = testAggregate
+                val testTasks = project.testTasksOf(devices.get(), testComponent) task@{
+                    this@task.aggregateTests
+                        .convention(testAggregate)
                 }
 
-                variant.dependsOn(testAggregate.map { if (it) testTask else emptyArray<Any>() })
-                variant.coverageData.from(testAggregate.zip(testTask) { agg, list ->
-                    if (agg) list.mapNotNull { task ->
-                        when (task) {
+                variant.dependsOn(testTasks.map { list ->
+                    list.mapNotNull {
+                        if (it.aggregateTests.get()) it else null
+                    }
+                })
+                variant.coverageData.from(testTasks.map { list ->
+                    list.mapNotNull { task ->
+                        when (val task = task.takeIf { it.aggregateTests.get() }) {
                             is AndroidUnitTest -> task.coverageData { jacocoCoverageOutputFile.orNull }
                             is DeviceProviderInstrumentTestTask -> task.coverageData { coverageDirectory.orNull }
                             is ManagedDeviceTestTask -> task.coverageData { getCoverageDirectory().orNull }
@@ -212,7 +263,6 @@ internal object AndroidSupport {
                             else -> null
                         }
                     }
-                    else emptyArray<Any>()
                 })
             }
         }

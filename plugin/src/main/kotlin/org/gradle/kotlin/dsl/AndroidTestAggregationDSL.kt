@@ -1,7 +1,9 @@
 package org.gradle.kotlin.dsl
 
 import com.android.build.api.dsl.BuildType
+import com.android.build.api.dsl.Device
 import com.android.build.api.dsl.ProductFlavor
+import com.android.build.api.dsl.TestOptions
 import com.android.build.api.variant.Component
 import com.android.build.api.variant.TestComponent
 import com.android.build.api.variant.Variant
@@ -30,7 +32,7 @@ public fun TestAggregationCoverageReport.addAndroidVariant(androidVariant: Varia
 }
 
 // returns an inner field that can extensions and its shared across all DSL callbacks
-internal val Component.gradleExtensions: ExtensionAware
+private val Component.gradleExtensions: ExtensionAware
     get() = compileConfiguration as ExtensionAware
 
 public val Variant.aggregateTests: Property<Boolean>
@@ -38,3 +40,10 @@ public val Variant.aggregateTests: Property<Boolean>
 
 public val TestComponent.aggregateTests: Property<Boolean>
     get() = gradleExtensions.aggregateTests
+
+public val Device.aggregateTests: Property<Boolean>
+    get() = (this as ExtensionAware).aggregateTests
+
+@Suppress("UNCHECKED_CAST")
+public val TestOptions.aggregateConnectedDevices: Property<Boolean>
+    get() = (this as ExtensionAware).extensions.getByName(::aggregateConnectedDevices.name) as Property<Boolean>

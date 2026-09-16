@@ -40,9 +40,6 @@ internal object KMPSupport {
                     )
             }
         }
-        the<KotlinMultiplatformExtension>().targets.all target@{
-            (this@target as ExtensionAware).aggregateTests(objects)
-        }
     }
 
     fun Project.install(
@@ -60,10 +57,11 @@ internal object KMPSupport {
         }
     }
 
-    private val KotlinTarget.supportsJaCoCo get() = when(platformType) {
-        KotlinPlatformType.jvm, KotlinPlatformType.androidJvm -> true
-        else -> false
-    }
+    private val KotlinTarget.supportsJaCoCo
+        get() = when (platformType) {
+            KotlinPlatformType.jvm, KotlinPlatformType.androidJvm -> true
+            else -> false
+        }
 
     class ResultsExtension(
         private val report: TestAggregationResultsReport,
@@ -129,10 +127,15 @@ internal object KMPSupport {
             (target as? KotlinTargetWithTests<*, *>)?.testRuns?.all run@{
                 if (this@run !is ExecutionTaskHolder<*>) return@run
 
-                executionTask.configure task@{ this@task.aggregateTests = targetAggregate }
-                variant.dependsOn(executionTask)
+                executionTask.configure task@{
+                    this@task.aggregateTests
+                        .convention(targetAggregate)
+                }
+                variant.dependsOn(executionTask.map {
+                    if (it.aggregateTests.get()) it else emptyArray<Any>()
+                })
                 variant.coverageData.from(executionTask.map { task ->
-                    when (task) {
+                    when (val task = task.takeIf { it.aggregateTests.get() }) {
                         is AbstractTestTask -> task.coverageData()
                         is KotlinTestReport -> task.testTasks.map { it.coverageData() }
                         else -> null
