@@ -1,9 +1,14 @@
 package io.github.gmazzo.test.aggregation.jacoco
 
+import java.io.IOException
+import org.apache.tools.ant.BuildException
 import org.apache.tools.ant.types.resources.Union
 import org.jacoco.ant.ReportTask
-import org.jacoco.core.data.ExecutionDataStore
-import org.jacoco.core.tools.ExecFileLoader
+import org.jacoco.core.analysis.IBundleCoverage
+import org.jacoco.core.data.ExecutionData
+import org.jacoco.core.data.SessionInfo
+import org.jacoco.report.IReportVisitor
+import org.jacoco.report.ISourceFileLocator
 
 /**
  * A horrible hack class aiming to introduce support for mapping coverage files correctly to each group
@@ -16,25 +21,53 @@ class GroupingReportTask : ReportTask() {
 
     private val structure = StructureGroup(isRoot = true)
 
-    private val executionDataStorePerGroup = mutableMapOf<String, ExecutionDataStore>()
+    private lateinit var loader: GroupingExecFileLoader
 
     init {
         FIELD_STRUCTURE.set(this, structure)
     }
 
     override fun execute() {
-        for (group in structure.children) {
-            super.createExecutiondata().addAll(group.createExecutiondata().resourceCollections)
-        }
+        loadGroupsExecutionData()
+        ensureOnStartListener()
 
         super.execute()
+    }
+
+    private fun loadGroupsExecutionData()  {
+        loader = GroupingExecFileLoader()
+
+        for (group in structure.children) {
+            loader.switchDataStore(group.name)
+
+            for (resource in group.executiondataElement) {
+                try {
+                    resource.inputStream.use(loader::load)
+
+                } catch (e: IOException) {
+                    throw BuildException(
+                        "Unable to read execution data file $resource, of group ${group.name}",
+                        e, getLocation()
+                    )
+                }
+            }
+        }
+    }
+
+    private fun ensureOnStartListener() {
+        @Suppress("UNCHECKED_CAST")
+        val formatters = FIELD_FORMATTERS.get(this) as MutableList<IReportVisitor>
+
+        if (formatters.firstOrNull() !is OnStartListener) {
+            formatters.add(0, OnStartListener())
+        }
     }
 
     override fun createExecutiondata(): Union {
         error("Define execution data in the group structure instead")
     }
 
-    inner class StructureGroup(val isRoot: Boolean) : GroupElement() {
+    internal inner class StructureGroup(val isRoot: Boolean) : GroupElement() {
 
         @Suppress("UNCHECKED_CAST")
         val name get() = FIELD_NAME.get(this) as String
@@ -52,7 +85,9 @@ class GroupingReportTask : ReportTask() {
             else super.createGroup()
 
         @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
-        inner class Children(val delegate: MutableList<StructureGroup>) : MutableList<StructureGroup> by delegate {
+        inner class Children(
+            private val delegate: MutableList<StructureGroup>,
+        ) : MutableList<StructureGroup> by delegate {
 
             override fun isEmpty(): Boolean {
                 setGroupDataStore()
@@ -60,14 +95,7 @@ class GroupingReportTask : ReportTask() {
             }
 
             private fun setGroupDataStore() {
-                val dataStore = executionDataStorePerGroup.getOrPut(this@StructureGroup.name) {
-                    with(ExecFileLoader()) {
-                        for (resource in executiondataElement) {
-                            runCatching { resource.inputStream.use(::load) }
-                        }
-                        executionDataStore
-                    }
-                }
+                val dataStore = loader.switchDataStore(this@StructureGroup.name)
 
                 FIELD_EXECUTION_DATA_STORE.set(this@GroupingReportTask, dataStore)
             }
@@ -76,10 +104,43 @@ class GroupingReportTask : ReportTask() {
 
     }
 
+    private inner class OnStartListener :
+        IReportVisitor,
+        CSVFormatterElement() { // yeah, this is just to make it inherit from FormatterElement
+
+        override fun createVisitor(): IReportVisitor {
+            FIELD_SESSION_INFO_STORE.set(this@GroupingReportTask, loader.sessionInfoStore)
+            return this
+        }
+
+        override fun visitInfo(
+            sessionInfos: List<SessionInfo>,
+            executionData: Collection<ExecutionData>
+        ) {
+        }
+
+        override fun visitEnd() {
+        }
+
+        override fun visitBundle(bundle: IBundleCoverage, locator: ISourceFileLocator) {
+        }
+
+        override fun visitGroup(name: String) = this
+
+    }
+
     private companion object {
 
         val FIELD_STRUCTURE = ReportTask::class.java
             .getDeclaredField("structure")
+            .apply { isAccessible = true }
+
+        val FIELD_FORMATTERS = ReportTask::class.java
+            .getDeclaredField("formatters")
+            .apply { isAccessible = true }
+
+        val FIELD_SESSION_INFO_STORE = ReportTask::class.java
+            .getDeclaredField("sessionInfoStore")
             .apply { isAccessible = true }
 
         val FIELD_EXECUTION_DATA_STORE = ReportTask::class.java
