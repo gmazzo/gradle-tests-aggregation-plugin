@@ -119,7 +119,7 @@ internal object AndroidSupport {
             .convention(true)
             .apply { finalizeValueOnRead() }
 
-        android.extensions.add("coverageRobolectricSupport", robolectricSupport)
+        (android as ExtensionAware).extensions.add("coverageRobolectricSupport", robolectricSupport)
 
         afterEvaluate {
             if (robolectricSupport.get()) {

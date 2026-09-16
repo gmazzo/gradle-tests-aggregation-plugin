@@ -7,6 +7,7 @@ import io.github.gmazzo.test.aggregation.BuildConfig.MIN_AGP_VERSION
 import io.github.gmazzo.test.aggregation.BuildConfig.MIN_GRADLE_VERSION
 import java.io.File
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
 import org.gradle.testkit.runner.internal.PluginUnderTestMetadataReading.readImplementationClasspath
 import org.gradle.util.GradleVersion
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -32,16 +33,26 @@ class AndroidTestAggregationPluginIntegrationTest {
         projectDir.deleteRecursively()
         File(javaClass.getResource("/project")!!.path).copyRecursively(projectDir)
 
-        GradleRunner.create()
+        val result = GradleRunner.create()
             .withProjectDir(projectDir)
             .withGradleVersion(gradleVersion)
             .withPluginClasspath("agp-$agpVersion-metadata.properties")
-            .withArguments("check", "-s")
+            .withArguments("aggregatedTestsReport", "-s")
+            .forwardOutput()
             .build()
 
+        assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestResultsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestCoverageReport")?.outcome)
+
+        val expectedCoverageXML = sequenceOf(
+            "/expected-$gradleVersion-coverage.xml",
+            "/expected-coverage.xml",
+        ).firstNotNullOf(javaClass::getResource)
+
         assertEquals(
-            javaClass.getResource("/expected-coverage.xml")!!.readText().withoutSessionInfo,
-            projectDir.resolve("build/reports/jacoco/jacocoAggregatedReport/jacocoAggregatedReport.xml")
+            expectedCoverageXML.readText().withoutSessionInfo,
+            projectDir.resolve("build/reports/aggregated-test-coverage/coverage.xml")
                 .readText().withoutSessionInfo,
         )
     }

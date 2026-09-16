@@ -71,7 +71,7 @@ public final class io/github/gmazzo/test/aggregation/TestAggregationBasePlugin :
 	public static final field TYPE_VARIANTS_LIST Ljava/lang/String;
 	public static final field USAGE_AGGREGATED_TEST_COVERAGE Ljava/lang/String;
 	public static final field USAGE_AGGREGATED_TEST_RESULTS Ljava/lang/String;
-	public fun <init> (Lorg/gradle/api/internal/artifacts/dsl/PublishArtifactNotationParser;)V
+	public fun <init> ()V
 	public synthetic fun apply (Ljava/lang/Object;)V
 	public fun apply (Lorg/gradle/api/Project;)V
 }

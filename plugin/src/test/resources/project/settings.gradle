@@ -13,6 +13,10 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         google()
+        maven {
+            name = "Local"
+            url = file("${localRepo}")
+        }
     }
 }
 

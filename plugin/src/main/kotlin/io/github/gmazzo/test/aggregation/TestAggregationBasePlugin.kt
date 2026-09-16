@@ -1,7 +1,6 @@
 package io.github.gmazzo.test.aggregation
 
 import java.io.File
-import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -26,7 +25,6 @@ import org.gradle.api.attributes.VerificationType.VERIFICATION_TYPE_ATTRIBUTE
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.internal.artifacts.dsl.PublishArtifactNotationParser
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.provider.ValueSource
@@ -42,9 +40,7 @@ import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.testing.jacoco.plugins.JacocoPlugin.ANT_CONFIGURATION_NAME
 
-public class TestAggregationBasePlugin @Inject constructor(
-    private val publishArtifactNotationParser: PublishArtifactNotationParser
-) : Plugin<Project> {
+public class TestAggregationBasePlugin : Plugin<Project> {
 
     public companion object {
         public const val DEFAULT_RESULTS_NAME: String = "aggregatedTestResults"
@@ -70,7 +66,7 @@ public class TestAggregationBasePlugin @Inject constructor(
 
         val jacocoAntClasspath =
             configurations.resolvable("aggregatedTestCoverageJacocoAntClasspath") {
-                extendsFrom(jacocoAntConfig)
+                extendsFrom(jacocoAntConfig.get())
             }
 
         dependencies {
@@ -83,7 +79,7 @@ public class TestAggregationBasePlugin @Inject constructor(
         }
 
         val reporting = the<ReportingExtension>()
-        reporting.reports {
+        with(reporting.reports) {
             registerFactory(TestAggregationResultsReport::class.java) {
                 createResultsReport(it, reporting.baseDirectory)
             }
@@ -445,11 +441,16 @@ public class TestAggregationBasePlugin @Inject constructor(
         }
     }
 
+    // workaround of missing `.artifacts` DSL in `ConfigurationVariant`
+    context(project: Project)
     private fun ConfigurationVariant.artifacts(
         provider: Provider<out Iterable<*>>,
         configure: Action<ConfigurablePublishArtifact> = {},
-    ) = artifacts.addAllLater(provider.map { list ->
-        list.map { publishArtifactNotationParser.parseNotation(it).also(configure::execute) }
+    ) = artifacts.addAllLater(provider.map {
+        val helper = project.configurations.detachedConfiguration().outgoing
+        
+        helper.artifacts(provider, configure)
+        helper.artifacts
     })
 
     private val String.defaultResultsDir

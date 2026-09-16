@@ -26,12 +26,12 @@ testing.suites {
 }
 
 dependencies {
-    "testFooImplementation"(project()) {
+    "testFooImplementation"(project(path)) {
         capabilities {
             requireCapability("$group:$name-foo")
         }
     }
-    "testBarImplementation"(project()) {
+    "testBarImplementation"(project(path)) {
         capabilities {
             requireCapability("$group:$name-bar")
         }

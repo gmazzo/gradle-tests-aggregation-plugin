@@ -1,11 +1,12 @@
 plugins {
-    id("io.github.gmazzo.test.aggregation.coverage")
-    id("io.github.gmazzo.test.aggregation.results")
+    id("io.github.gmazzo.test.aggregation")
     id("base")
 }
 
 allprojects {
     apply(plugin: "jacoco")
+    apply(plugin: "io.github.gmazzo.test.aggregation")
+    rootProject.dependencies { aggregateTestsFrom(project) }
 
     jacoco.toolVersion = "0.8.12"
 

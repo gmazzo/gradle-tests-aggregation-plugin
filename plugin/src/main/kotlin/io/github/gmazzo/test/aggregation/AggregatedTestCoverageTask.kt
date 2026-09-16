@@ -8,6 +8,7 @@ import kotlin.io.path.ExperimentalPathApi
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
@@ -24,8 +25,8 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskAction
-import org.gradle.kotlin.dsl.newInstance
-import org.gradle.kotlin.dsl.submit
+import org.gradle.kotlin.dsl.GroovyBuilderScope
+import org.gradle.kotlin.dsl.withGroovyBuilder
 import org.gradle.workers.WorkerExecutor
 
 
@@ -89,51 +90,60 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
             "Could not find default JaCoCo Ant task classpath. Did you apply the 'jacoco' plugin?"
         }
 
-        htmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
-        xmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
-        csvOutputLocation.asFile.orNull?.apply { deleteRecursively() }
+        val htmlFile = htmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
+        val xmlFile = xmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
+        val csvFile = csvOutputLocation.asFile.orNull?.apply { deleteRecursively() }
+        val variants = variants.get()
 
-        workerExecutor.classLoaderIsolation().submit(AggregatedTestCoverageAction::class) params@{
-            this@params.antLibraryClasspath
-                .from(this@AggregatedTestCoverageTask.jacocoClasspath)
-                .disallowChanges()
-            this@params.reportName
-                .value(this@AggregatedTestCoverageTask.name)
-                .disallowChanges()
-            this@params.variants
-                .value(this@AggregatedTestCoverageTask.variants.map { list ->
-                    list.associate { it.name to it.resolved() }
-                })
-                .disallowChanges()
-            this@params.htmlOutputLocation
-                .value(
-                    this@AggregatedTestCoverageTask.htmlRequired
-                        .zip(this@AggregatedTestCoverageTask.htmlOutputLocation) { required, location ->
-                            if (required) location else null
-                        })
-                .disallowChanges()
-            this@params.xmlOutputLocation
-                .value(
-                    this@AggregatedTestCoverageTask.xmlRequired
-                        .zip(this@AggregatedTestCoverageTask.xmlOutputLocation) { required, location ->
-                            if (required) location else null
-                        })
-                .disallowChanges()
-            this@params.csvOutputLocation
-                .value(
-                    this@AggregatedTestCoverageTask.csvRequired
-                        .zip(this@AggregatedTestCoverageTask.csvOutputLocation) { required, location ->
-                            if (required) location else null
-                        })
-                .disallowChanges()
+        ant.withGroovyBuilder {
+            "taskdef"(
+                "name" to "jacocoReport",
+                "classname" to "io.github.gmazzo.test.aggregation.jacoco.GroupingReportTask",
+                "classpath" to jacocoClasspath.asPath
+            )
+
+            "jacocoReport" {
+                "structure"(mapOf("name" to this@AggregatedTestCoverageTask.name)) {
+                    when (variants.size) {
+                        1 -> bindData(variants.single())
+                        else -> for (variant in variants) {
+                            "group"("name" to variant.name) {
+                                bindData(variant)
+                            }
+                        }
+                    }
+                }
+                if (htmlFile != null) {
+                    "html"(mapOf("destdir" to htmlFile))
+                }
+                if (xmlFile != null) {
+                    "xml"(mapOf("destfile" to xmlFile))
+                }
+                if (csvFile != null) {
+                    "csv"(mapOf("destfile" to csvFile))
+                }
+            }
         }
     }
 
-    private fun Variant.resolved() =
-        objects.newInstance<Variant>(name).apply new@{
-            this@new.sources.from(this@resolved.sources.files).disallowChanges()
-            this@new.classes.from(this@resolved.classes.files).disallowChanges()
-            this@new.coverageData.from(this@resolved.coverageData.files).disallowChanges()
+    private fun GroovyBuilderScope.bindData(variant: Variant) {
+        "classfiles" {
+            resources(variant.classes)
         }
+        "sourcefiles" {
+            resources(variant.sources)
+        }
+        "executiondata" {
+            resources(variant.coverageData)
+        }
+    }
+
+    private fun GroovyBuilderScope.resources(files: FileCollection) {
+        "resources" {
+            for (file in files.asFileTree) {
+                "file"("file" to file.absolutePath.replace("$$", "$$$$"))
+            }
+        }
+    }
 
 }
