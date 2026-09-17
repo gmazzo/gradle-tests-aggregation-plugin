@@ -9,6 +9,7 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.property
 import org.gradle.kotlin.dsl.typeOf
@@ -58,8 +59,17 @@ internal var ExtensionAware.aggregateTests: Property<Boolean>
         }
     }
 
-internal val Task.coverageFile
-    get() = extensions.findByType<JacocoTaskExtension>()?.destinationFile
+internal fun <Type : Task> Type.coverageData(
+    getter: Type.() -> Any? = { extensions.findByType<JacocoTaskExtension>()?.destinationFile },
+) = getter()
+    ?: error("Coverage data for variant '$path' is missing. Did you $missingCoverageHint?")
+
+private val Task.missingCoverageHint
+    get() = when {
+        project.plugins.hasPlugin("com.android.base") -> "added 'enable${if (this is AbstractTestTask) "Unit" else "Android"}TestCoverage = true'"
+        project.plugins.hasPlugin("com.android.library.multiplatform") -> "added 'with${if (this is AbstractTestTask) "Host" else "Device"}Test { enableCoverage = true }'"
+        else -> "applied the 'jacoco' plugin"
+    }
 
 internal val String.capitalized: String
     get() = replaceFirstChar { it.uppercase() }

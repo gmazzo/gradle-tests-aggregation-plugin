@@ -30,7 +30,7 @@ internal abstract class DefaultTestAggregationCoverageReport @Inject constructor
 
             variant.dependsOn(suiteAggregate.map { if (it) testTask else emptyArray<Any>() })
             variant.coverageData.from(suiteAggregate.zip(testTask) { agg, task ->
-                task.takeIf { agg }?.coverageFile ?: emptyArray<Any>()
+                task.takeIf { agg }?.coverageData() ?: emptyArray<Any>()
             })
 
             testTask.configure task@{ this@task.aggregateTests = suiteAggregate }

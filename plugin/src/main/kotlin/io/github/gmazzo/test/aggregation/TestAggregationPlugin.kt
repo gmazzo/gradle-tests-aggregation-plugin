@@ -44,12 +44,10 @@ public class TestAggregationPlugin : Plugin<Project> {
             }
 
             plugins.withId("java") {
-                plugins.withId("jacoco") {
-                    val main = the<SourceSetContainer>().getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-                    val tests = suites.getByName<JvmTestSuite>(SourceSet.TEST_SOURCE_SET_NAME)
+                val main = the<SourceSetContainer>().getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                val tests = suites.getByName<JvmTestSuite>(SourceSet.TEST_SOURCE_SET_NAME)
 
-                    testCoverage.addTestSuite(main, tests)
-                }
+                testCoverage.addTestSuite(main, tests)
             }
         }
 

@@ -86,10 +86,6 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
 
     @TaskAction
     internal fun generateCoverageReport() {
-        check(jacocoClasspath.files.isNotEmpty()) {
-            "Could not find default JaCoCo Ant task classpath. Did you apply the 'jacoco' plugin?"
-        }
-
         val htmlFile = htmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
         val xmlFile = xmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
         val csvFile = csvOutputLocation.asFile.orNull?.apply { deleteRecursively() }

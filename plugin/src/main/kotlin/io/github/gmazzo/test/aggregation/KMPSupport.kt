@@ -54,11 +54,15 @@ internal object KMPSupport {
             if (platformType == KotlinPlatformType.androidJvm) return@target // will be handled by AndroidSupport
 
             testResults.addKotlinTarget(this@target)
-
-            plugins.withId("jacoco") {
+            if (this@target.supportsJaCoCo) {
                 testCoverage.addKotlinTarget(this@target)
             }
         }
+    }
+
+    private val KotlinTarget.supportsJaCoCo get() = when(platformType) {
+        KotlinPlatformType.jvm, KotlinPlatformType.androidJvm -> true
+        else -> false
     }
 
     class ResultsExtension(
@@ -104,8 +108,8 @@ internal object KMPSupport {
     ) : TestAggregationReportKotlinExtension {
 
         override fun invoke(target: KotlinTarget) {
-            check(target.platformType != KotlinPlatformType.common) {
-                "Common target '${target.name}' should be aggregated by their platform targets"
+            check(target.supportsJaCoCo) {
+                "Target '${target.name}' does not supports JaCoCo coverage. Only JVM-based are supported"
             }
 
             val targetAggregate = target.aggregateTests
@@ -129,13 +133,14 @@ internal object KMPSupport {
                 variant.dependsOn(executionTask)
                 variant.coverageData.from(executionTask.map { task ->
                     when (task) {
-                        is AbstractTestTask -> task.coverageFile
-                        is KotlinTestReport -> task.testTasks.mapNotNull { it.coverageFile }
+                        is AbstractTestTask -> task.coverageData()
+                        is KotlinTestReport -> task.testTasks.map { it.coverageData() }
                         else -> null
                     } ?: emptyArray<Any>()
                 })
             }
         }
+
     }
 
 }

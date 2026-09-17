@@ -185,15 +185,6 @@ public class TestAggregationBasePlugin : Plugin<Project> {
 
             }
 
-            afterEvaluate {
-                plugins.withId("com.android.base") {
-                    with(AndroidSupport) {
-                        configurations.maybeCreate(ANT_CONFIGURATION_NAME)
-                            .defaultDependencies { add(jacocoDependency) }
-                    }
-                }
-            }
-
             htmlRequired
                 .convention(true)
                 .finalizeValueOnRead()
@@ -448,7 +439,7 @@ public class TestAggregationBasePlugin : Plugin<Project> {
         configure: Action<ConfigurablePublishArtifact> = {},
     ) = artifacts.addAllLater(provider.map {
         val helper = project.configurations.detachedConfiguration().outgoing
-        
+
         helper.artifacts(provider, configure)
         helper.artifacts
     })

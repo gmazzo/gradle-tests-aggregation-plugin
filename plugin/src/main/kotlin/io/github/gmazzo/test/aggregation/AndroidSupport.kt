@@ -1,7 +1,6 @@
 package io.github.gmazzo.test.aggregation
 
 import com.android.build.api.artifact.ScopedArtifact
-import com.android.build.api.dsl.BuildType
 import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.DeviceTest
@@ -26,7 +25,6 @@ import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.kotlin.dsl.addAndroidVariant
 import org.gradle.kotlin.dsl.aggregateTests
 import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.gradleExtensions
 import org.gradle.kotlin.dsl.listProperty
@@ -39,15 +37,9 @@ import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 
 internal object AndroidSupport {
 
-    val Project.jacocoDependency
-        get() = the<CommonExtension>().testCoverage.jacocoVersion
-            .let { dependencies.create(BuildConfig.JACOCO_ANT_DEPENDENCY.first + ':' + it) }
-
     fun Project.installBase() = configure<ReportingExtension> {
         if (!isKMP) {
-            plugins.withId("jacoco") {
-                addRobolectricTestsSupport()
-            }
+            addRobolectricTestsSupport()
         }
 
         reports.withType<TestAggregationResultsReport> report@{
@@ -84,31 +76,9 @@ internal object AndroidSupport {
         testCoverage: TestAggregationCoverageReport,
     ) {
         androidComponents.onVariants { variant ->
-            val buildType = resolveBuildType(variant)
-
-            for (testComponent in variant.nestedComponents) {
-                if (testComponent !is TestComponent) continue
-
-                val coverageEnabled = when (testComponent) {
-                    is HostTest -> buildType?.enableUnitTestCoverage ?: false
-                    is DeviceTest -> buildType?.enableAndroidTestCoverage ?: false
-                    else -> false
-                }
-                if (coverageEnabled) {
-                    testCoverage.addAndroidVariant(variant)
-                    break
-                }
-            }
-
             if (variant.nestedComponents.any { it is TestComponent }) {
                 testResults.addAndroidVariant(variant)
-            }
-
-            // KMP does not set `buildType` but applies `jacoco` instead
-            if (buildType == null) {
-                plugins.withId("jacoco") {
-                    testCoverage.addAndroidVariant(variant)
-                }
+                testCoverage.addAndroidVariant(variant)
             }
         }
     }
@@ -123,21 +93,16 @@ internal object AndroidSupport {
 
         afterEvaluate {
             if (robolectricSupport.get()) {
-                tasks.withType<AbstractTestTask>().configureEach task@{
-                    this@task.configure<JacocoTaskExtension> {
-                        isIncludeNoLocationClasses = true
-                        excludes = listOf("jdk.internal.*")
+                plugins.withId("jacoco") {
+                    tasks.withType<AbstractTestTask>().configureEach task@{
+                        this@task.configure<JacocoTaskExtension> {
+                            isIncludeNoLocationClasses = true
+                            excludes = listOf("jdk.internal.*")
+                        }
                     }
                 }
             }
         }
-    }
-
-    private fun Project.resolveBuildType(variant: AndroidVariant): BuildType? {
-        val buildType = variant.buildType ?: return null
-        val android = extensions.findByName("android") ?: return null
-
-        return (android as CommonExtension).buildTypes[buildType]
     }
 
     private fun Project.testTasksOf(component: TestComponent, configure: Action<Task>) =
@@ -155,9 +120,6 @@ internal object AndroidSupport {
             else -> provider { emptyList() }
         }
 
-    private val Project.android
-        get() = extensions.getByName<CommonExtension>("android")
-
     private val Project.androidComponents
         get() = extensions.getByName<AndroidComponentsExtension<*, *, *>>("androidComponents")
 
@@ -167,19 +129,22 @@ internal object AndroidSupport {
     private val Project.isKMP
         get() = plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")
 
+    private val AndroidVariant.testComponents
+        get(): List<TestComponent> = nestedComponents
+            .filterIsInstance<TestComponent>()
+            .also {
+                check(it.isNotEmpty()) {
+                    "Test aggregation is only supported for variants with tests, but '$name' does not have any"
+                }
+            }
+
     class ResultsExtension(
         private val project: Project,
         private val report: TestAggregationResultsReport,
     ) : TestAggregationReportAndroidExtension {
 
         override fun invoke(androidVariant: AndroidVariant) {
-            val testsComponents = androidVariant.nestedComponents.filterIsInstance<TestComponent>()
-
-            check(testsComponents.isNotEmpty()) {
-                "Test aggregation is only supported for variants with tests, but ${androidVariant.name} does not have any"
-            }
-
-            for (testComponent in testsComponents) {
+            for (testComponent in androidVariant.testComponents) {
                 val testTask = project.testTasksOf(testComponent) task@{
                     this@task.aggregateTests = testComponent.aggregateTests
                 }
@@ -229,9 +194,7 @@ internal object AndroidSupport {
             androidVariant.sources.kotlin?.all?.let(variant.sources::from)
             variant.classes.from(classesTask)
 
-            for (testComponent in androidVariant.nestedComponents) {
-                if (testComponent !is TestComponent) continue
-
+            for (testComponent in androidVariant.testComponents) {
                 val testAggregate = testComponent.aggregateTests
                 val testTask = project.testTasksOf(testComponent) task@{
                     this@task.aggregateTests = testAggregate
@@ -241,11 +204,11 @@ internal object AndroidSupport {
                 variant.coverageData.from(testAggregate.zip(testTask) { agg, list ->
                     if (agg) list.mapNotNull { task ->
                         when (task) {
-                            is AndroidUnitTest -> task.jacocoCoverageOutputFile
-                            is DeviceProviderInstrumentTestTask -> task.coverageDirectory
-                            is ManagedDeviceTestTask -> task.getCoverageDirectory()
-                            is ManagedDeviceInstrumentationTestTask -> task.getCoverageDirectory()
-                            is AbstractTestTask -> task.coverageFile
+                            is AndroidUnitTest -> task.coverageData { jacocoCoverageOutputFile.orNull }
+                            is DeviceProviderInstrumentTestTask -> task.coverageData { coverageDirectory.orNull }
+                            is ManagedDeviceTestTask -> task.coverageData { getCoverageDirectory().orNull }
+                            is ManagedDeviceInstrumentationTestTask -> task.coverageData { getCoverageDirectory().orNull }
+                            is AbstractTestTask -> task.coverageData()
                             else -> null
                         }
                     }
