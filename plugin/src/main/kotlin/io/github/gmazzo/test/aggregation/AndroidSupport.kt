@@ -12,6 +12,7 @@ import com.android.build.gradle.internal.tasks.AndroidTestTask
 import com.android.build.gradle.internal.tasks.DeviceProviderInstrumentTestTask
 import com.android.build.gradle.internal.tasks.ManagedDeviceInstrumentationTestTask
 import com.android.build.gradle.internal.tasks.ManagedDeviceTestTask
+import com.android.build.gradle.tasks.TestSuiteTestTask
 import com.android.build.gradle.tasks.factory.AndroidUnitTest
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -259,7 +260,10 @@ internal object AndroidSupport {
                             is DeviceProviderInstrumentTestTask -> task.coverageData { coverageDirectory.orNull }
                             is ManagedDeviceTestTask -> task.coverageData { getCoverageDirectory().orNull }
                             is ManagedDeviceInstrumentationTestTask -> task.coverageData { getCoverageDirectory().orNull }
-                            is AbstractTestTask -> task.coverageData()
+                            is AbstractTestTask -> when {
+                                task.isBuiltInTestPlatformTask -> task.coverageData { (this as TestSuiteTestTask).coverageDir.orNull }
+                                else -> task.coverageData()
+                            }
                             else -> null
                         }
                     }
@@ -269,6 +273,10 @@ internal object AndroidSupport {
 
         private val AndroidVariant.kmpAwareName
             get() = if (project.isKMP && name == "androidMain") "android" else name
+
+        // AGP's built-in test platform runs device tests as a `Test` task, but coverage goes to `coverageDir` (AGP 9+)
+        private val Task.isBuiltInTestPlatformTask
+            get() = runCatching { this is TestSuiteTestTask }.getOrDefault(false)
 
     }
 

@@ -211,7 +211,7 @@ publishing.repositories.maven(localRepoDir) { name = "Local" }
 tasks.processTestResources {
     val localRepo = localRepoDir.get().asFile.absolutePath
 
-    filesMatching("project/settings.gradle") {
+    filesMatching("*/settings.gradle") {
         expand(mapOf("localRepo" to localRepo))
     }
 }
