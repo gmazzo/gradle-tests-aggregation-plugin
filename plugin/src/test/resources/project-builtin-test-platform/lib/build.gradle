@@ -1,0 +1,31 @@
+plugins {
+    id("com.android.library")
+}
+
+android {
+    namespace = "org.test.lib"
+
+    compileSdk = 36
+
+    buildTypes.debug.enableUnitTestCoverage = true
+    buildTypes.debug.enableAndroidTestCoverage = true
+
+    testOptions.managedDevices.localDevices.register("emulator") {
+        device = "Pixel 2"
+        apiLevel = 30
+        systemImageSource = "aosp-atd"
+        aggregateTests.set(true)
+    }
+}
+
+// Prints what the coverage report would hand to JaCoCo, without running the device tests
+tasks.register("printDeviceTestCoverageData") {
+    def deviceTestTask = tasks.named("emulatorDebugAndroidTest")
+    def report = aggregatedTestCoverage
+
+    doLast {
+        println("deviceTestTask=" + deviceTestTask.get().class.superclass.name)
+        println("deviceCoverageDir=" + deviceTestTask.get().coverageDir.get().asFile)
+        report.variants.each { println("coverageData[" + it.name + "]=" + it.coverageData.files) }
+    }
+}

@@ -166,7 +166,9 @@ testOptions {
 > [^CAUTION]
 > With this set, the build will fail if no connected devices are available.
 
-Also, [Managed Devices](https://developer.android.com/studio/test/managed-devices) are supported.
+Also, [Managed Devices](https://developer.android.com/studio/test/managed-devices) are supported,
+on both the Unified Test Platform and AGP's built-in test platform
+(`android.experimental.androidTest.builtin_test_platform=true`).
 
 You can aggregate them with `aggregateTests` DSL:
 ```kotlin

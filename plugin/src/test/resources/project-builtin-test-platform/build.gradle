@@ -1,0 +1,10 @@
+plugins {
+    id("io.github.gmazzo.test.aggregation")
+    id("base")
+}
+
+allprojects {
+    apply(plugin: "jacoco")
+    apply(plugin: "io.github.gmazzo.test.aggregation")
+    rootProject.dependencies { aggregateTestsFrom(project) }
+}

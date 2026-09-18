@@ -11,6 +11,9 @@ import org.gradle.testkit.runner.TaskOutcome
 import org.gradle.testkit.runner.internal.PluginUnderTestMetadataReading.readImplementationClasspath
 import org.gradle.util.GradleVersion
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments.of
@@ -56,6 +59,37 @@ class AndroidTestAggregationPluginIntegrationTest {
                 .readText().withoutSessionInfo,
         )
     }
+
+    @Test
+    fun `should aggregate managed device coverage from the built-in test platform`() {
+        val projectDir = File(System.getenv("TEMP_DIR"), "project-builtin-test-platform")
+
+        projectDir.deleteRecursively()
+        File(javaClass.getResource("/project-builtin-test-platform")!!.path).copyRecursively(projectDir)
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withPluginClasspath("agp-$ANDROID_GRADLE_PLUGIN_VERSION-metadata.properties")
+            .withArguments(":lib:printDeviceTestCoverageData", "-s")
+            .forwardOutput()
+            .build()
+
+        val deviceCoverageDir = result.output.lineValue("deviceCoverageDir")
+        val coverageData = result.output.lineValue("coverageData[debug]")
+
+        assertTrue(
+            deviceCoverageDir in coverageData,
+            "The device test's coverage directory should be aggregated: $coverageData",
+        )
+        assertFalse(
+            "emulatorDebugAndroidTest.exec" in coverageData,
+            "The host JVM's JaCoCo agent output should not be aggregated: $coverageData",
+        )
+    }
+
+    private fun String.lineValue(key: String) = lineSequence()
+        .single { it.startsWith("$key=") }
+        .substringAfter('=')
 
     private val String.withoutSessionInfo
         get() = replace("<sessioninfo[^>]+/>".toRegex(), "")
