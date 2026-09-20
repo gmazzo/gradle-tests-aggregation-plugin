@@ -16,7 +16,6 @@ plugins {
     alias(libs.plugins.gradle.testkit.jacoco)
     alias(libs.plugins.publicationsReport)
     `jacoco-report-aggregation`
-    `java-test-fixtures`
 }
 
 group = "io.github.gmazzo.test.aggregation"
@@ -80,31 +79,6 @@ gradlePlugin {
         )
     }
 
-    plugins.create("test-coverage-aggregation") {
-        id = "io.github.gmazzo.test.aggregation.coverage"
-        displayName = name
-        implementationClass =
-            "io.github.gmazzo.android.test.aggregation.TestCoverageAggregationPlugin"
-        description = "Jacoco coverage aggregation support for Android/JVM modules"
-        tags.addAll(
-            "android",
-            "agp",
-            "coverage",
-            "jacoco",
-            "test",
-            "aggregation",
-            "jacoco-report-aggregation"
-        )
-    }
-
-    plugins.create("test-results-aggregation") {
-        id = "io.github.gmazzo.test.aggregation.results"
-        displayName = name
-        implementationClass =
-            "io.github.gmazzo.android.test.aggregation.TestResultsAggregationPlugin"
-        description = "Test results aggregation support for Android/JVM modules"
-        tags.addAll("android", "agp", "test", "aggregation", "test-report-aggregation")
-    }
 }
 
 mavenPublishing {
@@ -167,16 +141,9 @@ dependencies {
 
     implementation(kotlinBOM)
 
-    testFixturesApi(gradleKotlinDsl())
-    testFixturesApi(platform(libs.junit.bom))
-    testFixturesApi(libs.junit.params)
-
-    testFixturesCompileOnly(plugin(libs.plugins.android))
-
     testImplementation(plugin(libs.plugins.android))
     testImplementation(libs.mockk)
 
-    "kotlinTestImplementation"(testFixtures(project))
     "kotlinTestImplementation"(plugin(libs.plugins.android))
     "kotlinTestImplementation"(plugin(libs.plugins.kotlin.multiplatform))
 
@@ -189,7 +156,6 @@ testing.suites.withType<JvmTestSuite> {
 }
 
 val test = sourceSets.getByName("test")
-val testFixtures = sourceSets.getByName("testFixtures")
 
 test.resources.srcDirs(
     dependencyMetadata("agp", dependencies.plugin(libs.plugins.android)),
@@ -197,13 +163,6 @@ test.resources.srcDirs(
         "$group:$name:$minAGPVersion"
     }),
 )
-
-components.named<AdhocComponentWithVariants>("java") {
-    sequenceOf(
-        testFixtures.apiElementsConfigurationName,
-        testFixtures.runtimeElementsConfigurationName,
-    ).forEach { withVariantsFromConfiguration(configurations.getByName(it)) { skip() } }
-}
 
 // allows `antGrouping` feature to be resolvable on tests
 val localRepoDir = layout.buildDirectory.dir("repo")
@@ -219,7 +178,6 @@ tasks.processTestResources {
 tasks.withType<Test>().configureEach {
     dependsOn("publishAllPublicationsToLocalRepository")
 
-    testClassesDirs += testFixtures.output.classesDirs
     environment("TEMP_DIR", temporaryDir)
     finalizedBy("${name}CodeCoverageReport")
 }

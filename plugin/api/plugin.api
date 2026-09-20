@@ -1,45 +1,3 @@
-public abstract class io/github/gmazzo/android/test/aggregation/AndroidTestCoverageAggregationPlugin : org/gradle/api/Plugin {
-	public fun <init> ()V
-	public synthetic fun apply (Ljava/lang/Object;)V
-	public fun apply (Lorg/gradle/api/Project;)V
-}
-
-public abstract class io/github/gmazzo/android/test/aggregation/AndroidTestResultsAggregationPlugin : org/gradle/api/Plugin {
-	public fun <init> ()V
-	public synthetic fun apply (Ljava/lang/Object;)V
-	public fun apply (Lorg/gradle/api/Project;)V
-}
-
-public abstract class io/github/gmazzo/android/test/aggregation/TestAggregationExtension {
-	public fun <init> ()V
-	public abstract fun getModules ()Lio/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules;
-	public final fun modules (Lorg/gradle/api/Action;)V
-}
-
-public abstract class io/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules {
-	public fun <init> ()V
-	public final fun exclude (Ljava/lang/Iterable;)Lio/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules;
-	public final fun exclude ([Lorg/gradle/api/Project;)Lio/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules;
-	public final fun exclude ([Lorg/gradle/api/artifacts/ProjectDependency;)Lio/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules;
-	public abstract fun getExcludes ()Lorg/gradle/api/provider/SetProperty;
-	public abstract fun getIncludes ()Lorg/gradle/api/provider/SetProperty;
-	public final fun include (Ljava/lang/Iterable;)Lio/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules;
-	public final fun include ([Lorg/gradle/api/Project;)Lio/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules;
-	public final fun include ([Lorg/gradle/api/artifacts/ProjectDependency;)Lio/github/gmazzo/android/test/aggregation/TestAggregationExtension$Modules;
-}
-
-public final class io/github/gmazzo/android/test/aggregation/TestCoverageAggregationPlugin : org/gradle/api/Plugin {
-	public fun <init> ()V
-	public synthetic fun apply (Ljava/lang/Object;)V
-	public fun apply (Lorg/gradle/api/Project;)V
-}
-
-public final class io/github/gmazzo/android/test/aggregation/TestResultsAggregationPlugin : org/gradle/api/Plugin {
-	public fun <init> ()V
-	public synthetic fun apply (Ljava/lang/Object;)V
-	public fun apply (Lorg/gradle/api/Project;)V
-}
-
 public abstract class io/github/gmazzo/test/aggregation/AggregatedTestCoverageTask : org/gradle/api/DefaultTask {
 	public fun <init> ()V
 	public abstract fun getCsvOutputLocation ()Lorg/gradle/api/file/RegularFileProperty;
@@ -183,8 +141,6 @@ public final class org/gradle/kotlin/dsl/AndroidTestAggregationDSLKt {
 	public static final fun addAndroidVariant (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport;Lcom/android/build/api/variant/Variant;)V
 	public static final fun addAndroidVariant (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport;Lcom/android/build/api/variant/Variant;)V
 	public static final fun getAggregateConnectedDevices (Lcom/android/build/api/dsl/TestOptions;)Lorg/gradle/api/provider/Property;
-	public static final fun getAggregateTestCoverage (Lcom/android/build/api/dsl/BuildType;)Lorg/gradle/api/provider/Property;
-	public static final fun getAggregateTestCoverage (Lcom/android/build/api/dsl/ProductFlavor;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/dsl/Device;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/variant/TestComponent;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/variant/Variant;)Lorg/gradle/api/provider/Property;
@@ -193,16 +149,13 @@ public final class org/gradle/kotlin/dsl/AndroidTestAggregationDSLKt {
 public final class org/gradle/kotlin/dsl/KotlinTestAggregationDSLKt {
 	public static final fun addKotlinTarget (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport;Lorg/jetbrains/kotlin/gradle/plugin/KotlinTarget;)V
 	public static final fun addKotlinTarget (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport;Lorg/jetbrains/kotlin/gradle/plugin/KotlinTarget;)V
-	public static final fun getAggregateTestCoverage (Lorg/jetbrains/kotlin/gradle/targets/jvm/KotlinJvmTarget;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lorg/jetbrains/kotlin/gradle/plugin/KotlinTarget;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lorg/jetbrains/kotlin/gradle/testing/internal/KotlinTestReport;)Lorg/gradle/api/provider/Property;
 }
 
 public final class org/gradle/kotlin/dsl/TestAggregationDSLKt {
-	public static final field USAGE_TEST_AGGREGATION Ljava/lang/String;
 	public static final fun getAggregateTests (Lorg/gradle/api/plugins/jvm/JvmTestSuite;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lorg/gradle/api/tasks/SourceSet;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lorg/gradle/api/tasks/testing/AbstractTestTask;)Lorg/gradle/api/provider/Property;
-	public static final fun testAggregation (Lorg/gradle/api/artifacts/dsl/DependencyHandler;Ljava/lang/Object;)Lorg/gradle/api/artifacts/ProjectDependency;
 }
 
