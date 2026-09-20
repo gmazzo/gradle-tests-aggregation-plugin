@@ -59,9 +59,12 @@ internal val ExtensionAware.aggregateTests: Property<Boolean>
     }
 
 internal fun <Type : Task> Type.coverageData(
-    getter: Type.() -> Any? = { extensions.findByType<JacocoTaskExtension>()?.destinationFile },
+    getter: Type.() -> Any? = { jacocoDataFile },
 ) = getter()
     ?: error("Coverage data for variant '$path' is missing. Did you $missingCoverageHint?")
+
+internal val Task.jacocoDataFile
+    get() = extensions.findByType<JacocoTaskExtension>()?.destinationFile
 
 private val Task.missingCoverageHint
     get() = when {

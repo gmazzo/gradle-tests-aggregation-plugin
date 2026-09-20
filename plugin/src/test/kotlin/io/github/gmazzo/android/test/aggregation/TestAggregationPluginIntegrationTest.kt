@@ -13,14 +13,16 @@ import org.gradle.util.GradleVersion
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments.of
 import org.junit.jupiter.params.provider.MethodSource
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class AndroidTestAggregationPluginIntegrationTest {
+class TestAggregationPluginIntegrationTest {
+
+    private val tempDir = File(System.getenv("TEMP_DIR"))
 
     fun arguments() = listOf(
         of(MIN_GRADLE_VERSION, MIN_AGP_VERSION),
@@ -30,8 +32,7 @@ class AndroidTestAggregationPluginIntegrationTest {
     @ParameterizedTest(name = "gradle={0}, android={1}")
     @MethodSource("arguments")
     fun `should aggregate projects`(gradleVersion: String, agpVersion: String) {
-        val projectDir =
-            File(System.getenv("TEMP_DIR"), "project/gradle-${gradleVersion}-agp-${agpVersion}")
+        val projectDir = tempDir.resolve("project/gradle-${gradleVersion}-agp-${agpVersion}")
 
         projectDir.deleteRecursively()
         File(javaClass.getResource("/project")!!.path).copyRecursively(projectDir)
@@ -60,16 +61,25 @@ class AndroidTestAggregationPluginIntegrationTest {
         )
     }
 
-    @Test
-    fun `should aggregate managed device coverage from the built-in test platform`() {
-        val projectDir = File(System.getenv("TEMP_DIR"), "project-builtin-test-platform")
+    @ParameterizedTest(name = "gradle={0}, android={1}")
+    @MethodSource("arguments")
+    fun `should aggregate managed device coverage from the built-in test platform`(
+        gradleVersion: String,
+        agpVersion: String
+    ) {
+        assumeTrue(GradleVersion.version(agpVersion.replace("-.*$".toRegex(), "")) >= GradleVersion.version("9.5.0"))
+
+        val projectDir = tempDir
+            .resolve("project-builtin-test-platform/gradle-${gradleVersion}-agp-${agpVersion}")
 
         projectDir.deleteRecursively()
-        File(javaClass.getResource("/project-builtin-test-platform")!!.path).copyRecursively(projectDir)
+        File(javaClass.getResource("/project-builtin-test-platform")!!.path)
+            .copyRecursively(projectDir)
 
         val result = GradleRunner.create()
             .withProjectDir(projectDir)
-            .withPluginClasspath("agp-$ANDROID_GRADLE_PLUGIN_VERSION-metadata.properties")
+            .withGradleVersion(gradleVersion)
+            .withPluginClasspath("agp-$agpVersion-metadata.properties")
             .withArguments(":lib:printDeviceTestCoverageData", "-s")
             .forwardOutput()
             .build()

@@ -260,10 +260,7 @@ internal object AndroidSupport {
                             is DeviceProviderInstrumentTestTask -> task.coverageData { coverageDirectory.orNull }
                             is ManagedDeviceTestTask -> task.coverageData { getCoverageDirectory().orNull }
                             is ManagedDeviceInstrumentationTestTask -> task.coverageData { getCoverageDirectory().orNull }
-                            is AbstractTestTask -> when {
-                                task.isBuiltInTestPlatformTask -> task.coverageData { (this as TestSuiteTestTask).coverageDir.orNull }
-                                else -> task.coverageData()
-                            }
+                            is AbstractTestTask -> task.coverageData { suiteAwareCoverageData }
                             else -> null
                         }
                     }
@@ -275,8 +272,13 @@ internal object AndroidSupport {
             get() = if (project.isKMP && name == "androidMain") "android" else name
 
         // AGP's built-in test platform runs device tests as a `Test` task, but coverage goes to `coverageDir` (AGP 9+)
-        private val Task.isBuiltInTestPlatformTask
-            get() = runCatching { this is TestSuiteTestTask }.getOrDefault(false)
+        private val AbstractTestTask.suiteAwareCoverageData
+            get() = try {
+                (this as? TestSuiteTestTask)?.coverageDir?.orNull
+
+            } catch (_: NoClassDefFoundError) {
+                jacocoDataFile
+            }
 
     }
 
