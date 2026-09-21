@@ -18,11 +18,3 @@ allprojects {
         reports.xml.required = true
     }
 }
-
-subprojects {
-    afterEvaluate {
-        dependencies {
-            testImplementation("junit:junit:4.13")
-        }
-    }
-}

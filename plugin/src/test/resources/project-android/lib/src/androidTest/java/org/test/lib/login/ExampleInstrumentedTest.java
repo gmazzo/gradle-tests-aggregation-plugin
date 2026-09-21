@@ -1,5 +1,6 @@
 package org.test.lib;
 
+import androidx.test.runner.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -7,8 +8,7 @@ import org.junit.runner.RunWith;
 public class ExampleInstrumentedTest {
 
     @Test
-    void useAppContext() {
-
+    public void sampleTest() {
     }
 
 }

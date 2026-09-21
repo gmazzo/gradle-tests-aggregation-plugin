@@ -1,7 +1,9 @@
 import com.android.build.api.dsl.CommonExtension
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
+import groovy.xml.MarkupBuilder
 import io.github.gmazzo.test.aggregation.TestAggregationCoverageReport
+import kotlin.math.max
 
 buildscript {
     dependencies {
@@ -33,18 +35,31 @@ subprojects {
     plugins.withId("com.android.base") {
         the<CommonExtension>().testOptions.managedDevices.localDevices {
             configureEach {
-                device = "Pixel 10"
+                device = "Pixel 6"
                 apiLevel = 33
                 systemImageSource = "aosp_atd"
+                aggregateTests = true
             }
             register("emulator")
             register("emulator2") {
-                device = "Pixel 8"
+                device = "Pixel 6a"
                 aggregateTests = false
             }
             register("emulator3") {
-                device = "Pixel 9"
+                device = "Pixel 7"
             }
+        }
+
+        // makes sure reports names are consistent, since it uses the emulator-555X on its name
+        val regex = "(?<=emulator)(\\d+)".toRegex()
+        tasks.matching { it.name.matches(regex) }.configureEach task@{
+            val taskName = this@task.name.replace(regex) {
+                when (val index = it.groupValues[1].toInt() - 1) {
+                    1 -> ""
+                    else -> index.toString()
+                }
+            }
+            mustRunAfter(taskName)
         }
     }
 }
@@ -58,7 +73,7 @@ fun Sync.reportsSpec(): CopySpec {
     val attrsRegEx = "\\b(timestamp|hostname)=\"[^\"]+\"\\s+".toRegex()
     val spansTimeRegEx =
         "\\d{4}-\\d?\\d-\\d?\\d \\d?\\d:\\d?\\d:\\d?\\d(?:\\.\\d+ \\w+)?".toRegex()
-    val emulatorName = "\\bemulator-\\d+\\s*-?\\s*\\d*\\b".toRegex()
+    val emulatorName = "emulator-\\d+(\\s*-?\\s*\\d*)?".toRegex()
     val androidHome = providers.environmentVariable("ANDROID_HOME").get()
     val coverageTask = tasks.aggregatedTestCoverageReport
     val resultsTypes = tasks.aggregatedTestResultsReport
@@ -83,6 +98,9 @@ fun Sync.reportsSpec(): CopySpec {
                     .replace(androidHome, "~/.android/sdk")
             }
         }
+        eachFile {
+            path = path.replace(emulatorName, "emulator-XXXX")
+        }
         includeEmptyDirs = false
         doLast {
             val cdataRegex = "<!\\[CDATA\\[.*?\\]\\]>".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -99,15 +117,17 @@ fun Sync.reportsSpec(): CopySpec {
                     )
 
                     // removes multiple CDATA
-                    "xml" -> file.writeText(file
-                        .readText()
-                        .replace(cdataRegex, "<![CDATA[]]>")
+                    "xml" -> file.writeText(
+                        file
+                            .readText()
+                            .replace(cdataRegex, "<![CDATA[]]>")
                     )
 
                     // removes pre tags content
-                    "html" -> file.writeText(file
-                        .readText()
-                        .replace(preRegex, "<pre id=\"...\">...</pre>")
+                    "html" -> file.writeText(
+                        file
+                            .readText()
+                            .replace(preRegex, "<pre id=\"...\">...</pre>")
                     )
                 }
             }
@@ -123,6 +143,9 @@ tasks.register<Sync>("updateSpecs") {
 }
 
 val checkReportsTask = tasks.register<Sync>("checkAggregatedReportsContent") {
+    val reportFile = layout.buildDirectory.file("reports/$name/report.xml")
+
+    outputs.file(reportFile).optional()
     outputs.upToDateWhen { false }
     into("expects") {
         from(aggregatedReportsSpecs)
@@ -138,7 +161,7 @@ val checkReportsTask = tasks.register<Sync>("checkAggregatedReportsContent") {
 
         val expected = File(temporaryDir, "expects").collect()
         val actual = File(temporaryDir, "actual").collect()
-        val diff = (expected.keys + actual.keys).mapNotNull {
+        val diffs = (expected.keys + actual.keys).associateWith {
             val expectedLines = expected[it]?.readLines().orEmpty()
             val actualLines = actual[it]?.readLines().orEmpty()
 
@@ -152,8 +175,33 @@ val checkReportsTask = tasks.register<Sync>("checkAggregatedReportsContent") {
                 ).joinToString("\n")
             }
         }
-        check(diff.isEmpty()) {
-            diff.joinToString(
+        val failures = diffs.values.filterNotNull()
+
+        reportFile.get().asFile.apply { parentFile.mkdirs() }.writer().use { out ->
+            val xml = MarkupBuilder(out)
+            xml.withGroovyBuilder {
+                "testsuite"(
+                    mapOf(
+                        "name" to this@register.name,
+                        "tests" to max(expected.keys.size, actual.keys.size),
+                        "failures" to failures.size
+                    )
+                ) {
+                    for ((file, diff) in diffs) {
+                        "testcase"(mapOf("name" to file)) {
+                            if (diff != null) {
+                                "failure"(mapOf("message" to "File '$file' mismatch", "type" to "AssertionError")) {
+                                    xml.mkp.yield(diff)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        check(failures.isEmpty()) {
+            failures.joinToString(
                 prefix = "The generated reports are different than the expected ones:\n",
                 separator = "\n\n\n"
             )

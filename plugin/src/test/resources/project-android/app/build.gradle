@@ -12,9 +12,15 @@ android {
     namespace = "org.test.app"
 
     compileSdk = 34
+    defaultConfig.minSdk = 21
 
     buildTypes.all {
         enableUnitTestCoverage = true
         enableAndroidTestCoverage = true
     }
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13")
+    androidTestImplementation("androidx.test:rules:1.7.0")
 }

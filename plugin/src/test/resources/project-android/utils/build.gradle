@@ -2,3 +2,7 @@ plugins {
     id("java")
     id("jacoco")
 }
+
+dependencies {
+    testImplementation("junit:junit:4.13")
+}

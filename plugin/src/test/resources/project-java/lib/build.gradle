@@ -19,3 +19,7 @@ testing.suites {
         aggregatedTestCoverage.addTestSuite(sourceSets.bar, it)
     }
 }
+
+dependencies {
+    testImplementation("junit:junit:4.13")
+}
