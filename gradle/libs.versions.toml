@@ -45,7 +45,7 @@ android-lib = { id = "com.android.library", version.ref = "android-plugin" }
 android-multiplatform = { id = "com.android.kotlin.multiplatform.library", version.ref = "android-plugin" }
 android-test = { id = "com.android.test", version.ref = "android-plugin" }
 android-baseline = { id = "androidx.baselineprofile", version = "1.5.0" }
-buildconfig = { id = "com.github.gmazzo.buildconfig", version = "6.1.0" }
+buildconfig = { id = "com.github.gmazzo.buildconfig", version = "6.1.1" }
 dokka = { id = "org.jetbrains.dokka-javadoc", version = "2.2.0" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
