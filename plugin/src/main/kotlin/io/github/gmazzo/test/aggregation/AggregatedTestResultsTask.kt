@@ -68,6 +68,8 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
 
         val generator = objects.newInstance<GenericHtmlTestReportGenerator>(outputDir)
         generator.generate(variants.get().flatMap { it.binaryDataDirs })
+
+        logger.lifecycle("View generated report at ${outputDir.resolve("index.html").toUri()}")
     }
 
     @TaskAction

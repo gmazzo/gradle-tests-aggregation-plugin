@@ -86,7 +86,7 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
 
     @TaskAction
     internal fun generateCoverageReport() {
-        val htmlFile = htmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
+        val htmlDir = htmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
         val xmlFile = xmlOutputLocation.asFile.orNull?.apply { deleteRecursively() }
         val csvFile = csvOutputLocation.asFile.orNull?.apply { deleteRecursively() }
         val variants = variants.get()
@@ -109,8 +109,8 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
                         }
                     }
                 }
-                if (htmlFile != null) {
-                    "html"(mapOf("destdir" to htmlFile))
+                if (htmlDir != null) {
+                    "html"(mapOf("destdir" to htmlDir))
                 }
                 if (xmlFile != null) {
                     "xml"(mapOf("destfile" to xmlFile))
@@ -119,6 +119,10 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
                     "csv"(mapOf("destfile" to csvFile))
                 }
             }
+        }
+
+        if (htmlDir != null) {
+            logger.lifecycle("View generated report at ${htmlDir.resolve("index.html").toURI()}")
         }
     }
 
