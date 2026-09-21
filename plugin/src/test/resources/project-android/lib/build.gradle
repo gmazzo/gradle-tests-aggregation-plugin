@@ -2,13 +2,21 @@ plugins {
     id("com.android.library")
 }
 
+androidComponents {
+    onVariants(selector().all()) {
+        it.compileConfiguration.aggregateTests.set(it.buildType == "debug")
+    }
+}
+
 android {
     namespace = "org.test.lib"
 
     compileSdk = 34
 
-    buildTypes.debug.enableUnitTestCoverage = true
-    buildTypes.debug.enableAndroidTestCoverage = true
+    buildTypes.all {
+        enableUnitTestCoverage = true
+        enableAndroidTestCoverage = true
+    }
 
     testOptions.managedDevices.localDevices {
         register("emulator") {

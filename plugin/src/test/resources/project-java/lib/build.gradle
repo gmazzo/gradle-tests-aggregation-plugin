@@ -1,0 +1,21 @@
+plugins {
+    id("java-library")
+}
+
+java {
+    registerFeature("foo") {
+        usingSourceSet(sourceSets.maybeCreate("foo"))
+    }
+    registerFeature("bar") {
+        usingSourceSet(sourceSets.maybeCreate("bar"))
+    }
+}
+
+testing.suites {
+    testFoo(JvmTestSuite) {
+        aggregatedTestCoverage.addTestSuite(sourceSets.foo, it)
+    }
+    testBar(JvmTestSuite){
+        aggregatedTestCoverage.addTestSuite(sourceSets.bar, it)
+    }
+}

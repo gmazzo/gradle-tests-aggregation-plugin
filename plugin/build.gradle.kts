@@ -228,6 +228,26 @@ tasks.withType<JacocoReport>().configureEach {
     reports.xml.required = true
 }
 
+tasks.register<Sync>("updateSpecs") {
+    val gradleVersion = GradleVersion.current().version
+
+    outputs.upToDateWhen { false }
+
+    from(tasks.test.map { it.ignoreFailures = true; it.temporaryDir }) {
+        include("project-*/gradle-$gradleVersion*/build/reports/aggregated-test-coverage/coverage.csv")
+        eachFile {
+            path = when {
+                path.startsWith("project-java/") -> "java-coverage.csv"
+                path.startsWith("project-android/") -> "android-coverage.csv"
+                else -> error("Unexpected file: $path")
+            }
+        }
+    }
+    into(layout.projectDirectory.dir("src/test/resources/coverage-expects"))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    includeEmptyDirs = false
+}
+
 afterEvaluate {
     tasks.named<Jar>("javadocJar") {
         from(tasks.dokkaGeneratePublicationJavadoc)

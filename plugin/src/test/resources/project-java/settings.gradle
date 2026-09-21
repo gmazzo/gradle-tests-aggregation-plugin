@@ -1,0 +1,25 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+    }
+}
+
+plugins {
+    id("jacoco-testkit-coverage")
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        google()
+        maven {
+            name = "Local"
+            url = file("${localRepo}")
+        }
+    }
+}
+
+rootProject.name = "testProject"
+
+include("app", "lib", "utils")

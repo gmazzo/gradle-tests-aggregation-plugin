@@ -1,0 +1,20 @@
+plugins {
+    id("com.android.application")
+}
+
+androidComponents {
+    onVariants(selector().all()) {
+        it.compileConfiguration.aggregateTests.set(it.buildType == "debug")
+    }
+}
+
+android {
+    namespace = "org.test.app"
+
+    compileSdk = 34
+
+    buildTypes.all {
+        enableUnitTestCoverage = true
+        enableAndroidTestCoverage = true
+    }
+}

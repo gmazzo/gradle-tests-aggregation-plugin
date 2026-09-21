@@ -136,6 +136,15 @@ androidComponents {
   }
 }
 ```
+> [!NOTE]
+> Due to some technical limitations in AGP, the `aggregateTests` DSL for Android variants in Groovy DSL must be delegated to its `compileConfiguration` configuration:
+> ```groovy
+> androidComponents {
+>   onVariants { variant ->
+>     variant.compileConfiguration.aggregateTests.set(true)
+>   }
+> }
+> ```
 
 For Kotlin Multiplatform:
 
