@@ -1,0 +1,4 @@
+modulePath=:lib
+testedVariantName=debug
+testSuiteName=androidTest
+testTarget=emulator

@@ -1,0 +1,16 @@
+plugins {
+    id("com.android.library")
+}
+
+android {
+    namespace = "org.test.lib"
+
+    compileSdk = 34
+
+    buildTypes.debug.enableUnitTestCoverage = true
+}
+
+// Mimics the managed device coverage directory AGP writes: `metadata.txt` next to the `.ec` files
+aggregatedTestCoverage.variants.configureEach {
+    coverageData.from(file("device-coverage"))
+}

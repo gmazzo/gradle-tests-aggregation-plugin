@@ -97,6 +97,36 @@ class TestAggregationPluginIntegrationTest {
         )
     }
 
+    @ParameterizedTest(name = "gradle={0}, android={1}")
+    @MethodSource("arguments")
+    fun `should ignore files that are not execution data in coverage directories`(
+        gradleVersion: String,
+        agpVersion: String
+    ) {
+        val projectDir = tempDir
+            .resolve("project-coverage-data-dir/gradle-${gradleVersion}-agp-${agpVersion}")
+
+        projectDir.deleteRecursively()
+        File(javaClass.getResource("/project-coverage-data-dir")!!.path)
+            .copyRecursively(projectDir)
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withGradleVersion(gradleVersion)
+            .withPluginClasspath("agp-$agpVersion-metadata.properties")
+            .withArguments("aggregatedTestCoverageReport", "-s")
+            .forwardOutput()
+            .build()
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestCoverageReport")?.outcome)
+
+        val coverageXML = projectDir.resolve("build/reports/aggregated-test-coverage/coverage.xml").readText()
+        assertTrue(
+            "<counter type=\"INSTRUCTION\" missed=\"\\d+\" covered=\"[1-9]\\d*\"/>".toRegex() in coverageXML,
+            "The unit tests' execution data should still be reported: $coverageXML",
+        )
+    }
+
     private fun String.lineValue(key: String) = lineSequence()
         .single { it.startsWith("$key=") }
         .substringAfter('=')
