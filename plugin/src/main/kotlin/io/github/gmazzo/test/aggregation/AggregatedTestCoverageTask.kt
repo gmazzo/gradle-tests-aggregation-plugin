@@ -130,7 +130,8 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
             resources(variant.sources)
         }
         "executiondata" {
-            resources(variant.coverageData)
+            // AGP writes `metadata.txt` next to a managed device's `.ec` files
+            resources(variant.coverageData.asFileTree.filter { it.extension == "exec" || it.extension == "ec" })
         }
     }
 
