@@ -37,13 +37,15 @@ subprojects {
                 device = "Pixel 10"
                 apiLevel = 33
                 systemImageSource = "aosp_atd"
-                aggregateTests = !isCiBuild() // TODO figure out how to make it work
             }
             register("emulator")
             register("emulator2") {
+                device = "Pixel 8"
                 aggregateTests = false
             }
-            register("emulator3")
+            register("emulator3") {
+                device = "Pixel 9"
+            }
         }
     }
 }

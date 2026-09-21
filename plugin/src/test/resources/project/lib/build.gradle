@@ -8,4 +8,13 @@ android {
     compileSdk = 34
 
     buildTypes.debug.enableUnitTestCoverage = true
+    buildTypes.debug.enableAndroidTestCoverage = true
+
+    testOptions.managedDevices.localDevices {
+        register("emulator") {
+            device = "Pixel 10"
+            apiLevel = 33
+            systemImageSource = "aosp_atd"
+        }
+    }
 }

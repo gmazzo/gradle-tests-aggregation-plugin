@@ -178,6 +178,13 @@ internal object AndroidSupport {
                 }
             }
 
+    internal val Task.enableCoverageDSLHint
+        get() = when {
+            (try { this is TestSuiteTestTask } catch (_: NoClassDefFoundError) { false } ) -> "enableAndroidTestCoverage = true"
+            this is AbstractTestTask -> "enableUnitTestCoverage = true"
+            else -> "enableAndroidTestCoverage = true"
+        }
+
     class ResultsExtension(
         private val project: Project,
         private val report: TestAggregationResultsReport,
@@ -274,7 +281,9 @@ internal object AndroidSupport {
         // AGP's built-in test platform runs device tests as a `Test` task, but coverage goes to `coverageDir` (AGP 9+)
         private val AbstractTestTask.suiteAwareCoverageData
             get() = try {
-                (this as? TestSuiteTestTask)?.coverageDir?.orNull
+                (this as? TestSuiteTestTask)?.coverageDir?.orNull?.asFileTree?.matching {
+                    include("**/*.ec", "**/*.exec")
+                }
 
             } catch (_: NoClassDefFoundError) {
                 jacocoDataFile

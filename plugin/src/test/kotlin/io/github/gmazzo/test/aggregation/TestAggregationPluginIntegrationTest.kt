@@ -1,6 +1,4 @@
-@file:Suppress("DEPRECATION")
-
-package io.github.gmazzo.android.test.aggregation
+package io.github.gmazzo.test.aggregation
 
 import com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION
 import io.github.gmazzo.test.aggregation.BuildConfig.MIN_AGP_VERSION
@@ -25,17 +23,26 @@ class TestAggregationPluginIntegrationTest {
     private val tempDir = File(System.getenv("TEMP_DIR"))
 
     fun arguments() = listOf(
-        of(MIN_GRADLE_VERSION, MIN_AGP_VERSION),
-        of(GradleVersion.current().version, ANDROID_GRADLE_PLUGIN_VERSION),
+        of(MIN_GRADLE_VERSION, MIN_AGP_VERSION, false),
+        of(GradleVersion.current().version, ANDROID_GRADLE_PLUGIN_VERSION, false),
+        of(GradleVersion.current().version, ANDROID_GRADLE_PLUGIN_VERSION, true),
     )
 
-    @ParameterizedTest(name = "gradle={0}, android={1}")
+    @ParameterizedTest(name = "gradle={0}, android={1}, agpTestSuites={2}")
     @MethodSource("arguments")
-    fun `should aggregate projects`(gradleVersion: String, agpVersion: String) {
+    fun `should aggregate projects`(gradleVersion: String, agpVersion: String, agpTestSuites: Boolean) {
         val projectDir = tempDir.resolve("project/gradle-${gradleVersion}-agp-${agpVersion}")
 
         projectDir.deleteRecursively()
         File(javaClass.getResource("/project")!!.path).copyRecursively(projectDir)
+
+        if (agpTestSuites) {
+            projectDir.resolve("gradle.properties").appendText(
+                """
+                android.experimental.androidTest.builtin_test_platform=true
+                """.trimIndent()
+            )
+        }
 
         val result = GradleRunner.create()
             .withProjectDir(projectDir)
@@ -60,46 +67,6 @@ class TestAggregationPluginIntegrationTest {
                 .readText().withoutSessionInfo,
         )
     }
-
-    @ParameterizedTest(name = "gradle={0}, android={1}")
-    @MethodSource("arguments")
-    fun `should aggregate managed device coverage from the built-in test platform`(
-        gradleVersion: String,
-        agpVersion: String
-    ) {
-        assumeTrue(GradleVersion.version(agpVersion.replace("-.*$".toRegex(), "")) >= GradleVersion.version("9.5.0"))
-
-        val projectDir = tempDir
-            .resolve("project-builtin-test-platform/gradle-${gradleVersion}-agp-${agpVersion}")
-
-        projectDir.deleteRecursively()
-        File(javaClass.getResource("/project-builtin-test-platform")!!.path)
-            .copyRecursively(projectDir)
-
-        val result = GradleRunner.create()
-            .withProjectDir(projectDir)
-            .withGradleVersion(gradleVersion)
-            .withPluginClasspath("agp-$agpVersion-metadata.properties")
-            .withArguments(":lib:printDeviceTestCoverageData", "-s")
-            .forwardOutput()
-            .build()
-
-        val deviceCoverageDir = result.output.lineValue("deviceCoverageDir")
-        val coverageData = result.output.lineValue("coverageData[debug]")
-
-        assertTrue(
-            deviceCoverageDir in coverageData,
-            "The device test's coverage directory should be aggregated: $coverageData",
-        )
-        assertFalse(
-            "emulatorDebugAndroidTest.exec" in coverageData,
-            "The host JVM's JaCoCo agent output should not be aggregated: $coverageData",
-        )
-    }
-
-    private fun String.lineValue(key: String) = lineSequence()
-        .single { it.startsWith("$key=") }
-        .substringAfter('=')
 
     private val String.withoutSessionInfo
         get() = replace("<sessioninfo[^>]+/>".toRegex(), "")

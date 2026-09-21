@@ -2,6 +2,7 @@ package io.github.gmazzo.test.aggregation
 
 import com.android.build.api.extension.impl.CurrentAndroidGradlePluginVersion
 import com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION
+import io.github.gmazzo.test.aggregation.AndroidSupport.enableCoverageDSLHint
 import java.lang.ref.WeakReference
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -68,7 +69,7 @@ internal val Task.jacocoDataFile
 
 private val Task.missingCoverageHint
     get() = when {
-        project.plugins.hasPlugin("com.android.base") -> "added 'enable${if (this is AbstractTestTask) "Unit" else "Android"}TestCoverage = true'"
+        project.plugins.hasPlugin("com.android.base") -> "added '${enableCoverageDSLHint}'"
         project.plugins.hasPlugin("com.android.library.multiplatform") -> "added 'with${if (this is AbstractTestTask) "Host" else "Device"}Test { enableCoverage = true }'"
         else -> "applied the 'jacoco' plugin"
     }
