@@ -2,7 +2,6 @@ import com.android.build.api.dsl.CommonExtension
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
 import io.github.gmazzo.test.aggregation.TestAggregationCoverageReport
-import org.jetbrains.kotlin.gradle.fus.internal.isCiBuild
 
 buildscript {
     dependencies {
