@@ -5,7 +5,7 @@
     <property name="android-test.device-display-name" value="emulator (emulator-XXXX)"/>
     <property name="android-test.device-info-path" value="/demo-project/login/build/outputs/androidTest-results/managedDevice/debug/emulator/device-info.pb"/>
   </properties>
-  <testcase name="com.example.login.ExampleInstrumentedTest.useAppContext" classname="device_emulator-5556" time="0.100s">
+  <testcase name="com.example.login.ExampleInstrumentedTest.useAppContext" classname="device_emulator-XXXX" time="0.100s">
     <properties>
       <property name="android-test.logcat-path" value="/demo-project/login/build/outputs/androidTest-results/managedDevice/debug/emulator/logcat-com.example.login.ExampleInstrumentedTest-useAppContext.txt"/>
     </properties>

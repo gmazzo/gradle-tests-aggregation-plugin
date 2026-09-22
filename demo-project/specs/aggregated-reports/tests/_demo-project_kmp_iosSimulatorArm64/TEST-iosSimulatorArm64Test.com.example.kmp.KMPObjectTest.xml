@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="iosSimulatorArm64Test.com.example.kmp.KMPObjectTest" tests="1" skipped="0" failures="0" errors="0" time="0.100s">
-  <properties/>
-  <testcase name="testKMPObject[iosSimulatorArm64]" classname="iosSimulatorArm64Test.com.example.kmp.KMPObjectTest" time="0.100s"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
