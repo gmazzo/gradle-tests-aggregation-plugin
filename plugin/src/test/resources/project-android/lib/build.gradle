@@ -13,6 +13,7 @@ android {
 
     compileSdk = 34
     defaultConfig.minSdk = 21
+    defaultConfig.testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     buildTypes.all {
         enableUnitTestCoverage = true
