@@ -281,9 +281,7 @@ internal object AndroidSupport {
         // AGP's built-in test platform runs device tests as a `Test` task, but coverage goes to `coverageDir` (AGP 9+)
         private val AbstractTestTask.suiteAwareCoverageData
             get() = try {
-                (this as? TestSuiteTestTask)?.coverageDir?.orNull?.asFileTree?.matching {
-                    include("**/*.ec", "**/*.exec")
-                }
+                (this as? TestSuiteTestTask)?.coverageDir?.orNull
 
             } catch (_: NoClassDefFoundError) {
                 jacocoDataFile
