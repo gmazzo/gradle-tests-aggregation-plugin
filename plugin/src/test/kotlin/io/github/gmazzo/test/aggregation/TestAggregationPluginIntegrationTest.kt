@@ -22,16 +22,32 @@ sealed class TestAggregationPluginIntegrationTest(
     class Java : TestAggregationPluginIntegrationTest("project-java") {
 
         fun arguments() = listOf(
-            of(MIN_GRADLE_VERSION),
-            of(GradleVersion.current().version),
+            of(MIN_GRADLE_VERSION, true),
+            of(GradleVersion.current().version, true),
+            of(GradleVersion.current().version, false),
         )
 
-        @ParameterizedTest(name = "gradle={0}")
+        @ParameterizedTest(name = "gradle={0}, groupByVariant={1}")
         @MethodSource("arguments")
-        fun `should aggregate projects`(gradleVersion: String) = testPlugin(
+        fun `should aggregate projects`(
+            gradleVersion: String,
+            groupByVariant: Boolean,
+        ) = testPlugin(
             gradleVersion,
-            expectedCoverageFile = "java-coverage.csv",
-        )
+            pathSuffix = if (groupByVariant) "" else "-flat",
+            expectedCoverageFile = if (groupByVariant) "java-coverage.csv" else "java-flat-coverage.csv",
+        ) { projectDir ->
+            if (!groupByVariant) {
+                projectDir.resolve("build.gradle").appendText(
+                    """
+
+                reporting.reports.withType(io.github.gmazzo.test.aggregation.TestAggregationCoverageReport).configureEach {
+                    groupByVariant = false
+                }
+                """.trimIndent()
+                )
+            }
+        }
 
     }
 

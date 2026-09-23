@@ -25,6 +25,13 @@ public interface TestAggregationCoverageReport :
         configure.execute(content)
     }
 
+    /**
+     * Whether each variant is reported as its own group (the default), with its classes covered only by its own
+     * execution data. When `false`, all classes and execution data are merged into a single ungrouped report, so
+     * code covered by the tests of another variant (or module) counts as covered too.
+     */
+    public val groupByVariant: Property<Boolean>
+
     public val htmlRequired: Property<Boolean>
 
     public val htmlOutputLocation: DirectoryProperty

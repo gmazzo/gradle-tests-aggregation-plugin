@@ -44,6 +44,7 @@ public abstract class io/github/gmazzo/test/aggregation/AggregatedTestCoverageTa
 	public fun <init> ()V
 	public abstract fun getCsvOutputLocation ()Lorg/gradle/api/file/RegularFileProperty;
 	public abstract fun getCsvRequired ()Lorg/gradle/api/provider/Property;
+	public abstract fun getGroupByVariant ()Lorg/gradle/api/provider/Property;
 	public abstract fun getHtmlOutputLocation ()Lorg/gradle/api/file/DirectoryProperty;
 	public abstract fun getHtmlRequired ()Lorg/gradle/api/provider/Property;
 	public abstract fun getJacocoClasspath ()Lorg/gradle/api/file/ConfigurableFileCollection;
@@ -87,6 +88,7 @@ public abstract interface class io/github/gmazzo/test/aggregation/TestAggregatio
 	public abstract fun getContent ()Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport$Content;
 	public abstract fun getCsvOutputLocation ()Lorg/gradle/api/file/RegularFileProperty;
 	public abstract fun getCsvRequired ()Lorg/gradle/api/provider/Property;
+	public abstract fun getGroupByVariant ()Lorg/gradle/api/provider/Property;
 	public abstract fun getHtmlOutputLocation ()Lorg/gradle/api/file/DirectoryProperty;
 	public abstract fun getHtmlRequired ()Lorg/gradle/api/provider/Property;
 	public abstract fun getReportTask ()Lorg/gradle/api/tasks/TaskProvider;

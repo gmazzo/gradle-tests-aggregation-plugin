@@ -94,6 +94,21 @@ reporting.reports.withType<TestAggregationCoverageReport>().configureEach {
 It's important to realize the filtering is done at `.class` file level (compiled classes). You
 should not use classes names here but GLOB patterns.
 
+## Grouping coverage by variant
+
+By default, the JaCoCo coverage report groups classes by variant (and module, when aggregating
+other modules), and each group's classes are only covered by the execution data of that same
+variant. Code of a module exercised only by the tests of another module is reported as missed.
+
+To merge all classes and execution data into a single report instead, so any test covering a class
+counts, disable the grouping:
+
+```kotlin
+reporting.reports.withType<TestAggregationCoverageReport>().configureEach {
+  groupByVariant = false
+}
+```
+
 ## Producing an aggregated report for the whole project
 
 This following a is a basic and quick configuration for generating an aggregated report for all

@@ -187,6 +187,10 @@ public class TestAggregationBasePlugin : Plugin<Project> {
 
             }
 
+            groupByVariant
+                .convention(true)
+                .finalizeValueOnRead()
+
             htmlRequired
                 .convention(true)
                 .finalizeValueOnRead()
@@ -220,6 +224,7 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                     this@task.variants.addAll(this@report.filteredVariants.map { it.isolated })
                     this@task.variants.addAll(this@report.variantsFromDependencies)
                     this@task.jacocoClasspath.from(jacocoAntClasspath)
+                    this@task.groupByVariant.value(this@report.groupByVariant)
                     this@task.htmlRequired.value(this@report.htmlRequired)
                     this@task.htmlOutputLocation.value(this@report.htmlOutputLocation)
                     this@task.xmlRequired.value(this@report.xmlRequired)

@@ -61,6 +61,9 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
     public abstract val jacocoClasspath: ConfigurableFileCollection
 
     @get:Input
+    public abstract val groupByVariant: Property<Boolean>
+
+    @get:Input
     @get:Optional
     public abstract val htmlRequired: Property<Boolean>
 
@@ -100,12 +103,12 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
 
             "jacocoReport" {
                 "structure"(mapOf("name" to this@AggregatedTestCoverageTask.name)) {
-                    when (variants.size) {
-                        1 -> bindData(variants.single())
-                        else -> for (variant in variants) {
-                            "group"("name" to variant.name) {
-                                bindData(variant)
-                            }
+                    if (variants.size == 1 || !groupByVariant.get()) {
+                        bindData(variants)
+
+                    } else for (variant in variants) {
+                        "group"("name" to variant.name) {
+                            bindData(listOf(variant))
                         }
                     }
                 }
@@ -126,15 +129,15 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
         }
     }
 
-    private fun GroovyBuilderScope.bindData(variant: Variant) {
+    private fun GroovyBuilderScope.bindData(variants: Collection<Variant>) {
         "classfiles" {
-            resources(variant.classes)
+            variants.forEach { resources(it.classes) }
         }
         "sourcefiles" {
-            resources(variant.sources)
+            variants.forEach { resources(it.sources) }
         }
         "executiondata" {
-            resources(variant.coverageData)
+            variants.forEach { resources(it.coverageData) }
         }
     }
 
