@@ -9,6 +9,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.plugins.jvm.JvmTestSuite
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
@@ -49,16 +50,32 @@ public interface TestAggregationCoverageReport :
 
         public val coverageData: ConfigurableFileCollection
 
+        /***
+         * Disables this variant, and configures [variant] to collect its data instead.
+         */
+        public fun supersededBy(variant: Variant) {
+            check(variant != this) { "Cannot supersede a variant with itself" }
+
+            aggregate.value(false)
+
+            variant.sources.from(sources)
+            variant.classes.from(classes)
+            variant.coverageData.from(coverageData)
+            variant.dependsOn(dependsOn)
+        }
+
     }
 
     public interface Content {
 
+        @get:Input
         public val includes: SetProperty<String>
 
         public fun include(vararg includes: String): Content = apply {
             this.includes.addAll(*includes)
         }
 
+        @get:Input
         public val excludes: SetProperty<String>
 
         public fun exclude(vararg excludes: String): Content = apply {

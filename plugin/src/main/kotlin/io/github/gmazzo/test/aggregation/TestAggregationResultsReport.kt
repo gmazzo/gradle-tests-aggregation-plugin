@@ -29,6 +29,18 @@ public interface TestAggregationResultsReport :
 
         public val binaryData: ConfigurableFileCollection
 
+        /***
+         * Disables this variant, and configures [variant] to collect its data instead.
+         */
+        public fun supersededBy(variant: Variant) {
+            check(variant != this) { "Cannot supersede a variant with itself" }
+
+            aggregate.value(false)
+
+            variant.binaryData.from(binaryData)
+            variant.dependsOn(dependsOn)
+        }
+
     }
 
 }

@@ -42,13 +42,15 @@ public final class io/github/gmazzo/android/test/aggregation/TestResultsAggregat
 
 public abstract class io/github/gmazzo/test/aggregation/AggregatedTestCoverageTask : org/gradle/api/DefaultTask {
 	public fun <init> ()V
+	public abstract fun getContent ()Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport$Content;
 	public abstract fun getCsvOutputLocation ()Lorg/gradle/api/file/RegularFileProperty;
 	public abstract fun getCsvRequired ()Lorg/gradle/api/provider/Property;
 	public abstract fun getHtmlOutputLocation ()Lorg/gradle/api/file/DirectoryProperty;
 	public abstract fun getHtmlRequired ()Lorg/gradle/api/provider/Property;
+	protected abstract fun getIsolatedVariants ()Lorg/gradle/api/provider/SetProperty;
 	public abstract fun getJacocoClasspath ()Lorg/gradle/api/file/ConfigurableFileCollection;
 	protected abstract fun getObjects ()Lorg/gradle/api/model/ObjectFactory;
-	public abstract fun getVariants ()Lorg/gradle/api/provider/SetProperty;
+	public final fun getVariants ()Lorg/gradle/api/provider/SetProperty;
 	protected abstract fun getWorkerExecutor ()Lorg/gradle/workers/WorkerExecutor;
 	public abstract fun getXmlOutputLocation ()Lorg/gradle/api/file/RegularFileProperty;
 	public abstract fun getXmlRequired ()Lorg/gradle/api/provider/Property;
@@ -58,10 +60,11 @@ public abstract class io/github/gmazzo/test/aggregation/AggregatedTestResultsTas
 	public fun <init> ()V
 	public abstract fun getHtmlOutputLocation ()Lorg/gradle/api/file/DirectoryProperty;
 	public abstract fun getHtmlRequired ()Lorg/gradle/api/provider/Property;
+	protected abstract fun getIsolatedVariants ()Lorg/gradle/api/provider/SetProperty;
 	public abstract fun getJunitXMLOutputLocation ()Lorg/gradle/api/file/DirectoryProperty;
 	public abstract fun getJunitXMLRequired ()Lorg/gradle/api/provider/Property;
 	protected abstract fun getObjects ()Lorg/gradle/api/model/ObjectFactory;
-	public abstract fun getVariants ()Lorg/gradle/api/provider/SetProperty;
+	public final fun getVariants ()Lorg/gradle/api/provider/SetProperty;
 }
 
 public final class io/github/gmazzo/test/aggregation/TestAggregationBasePlugin : org/gradle/api/Plugin {
@@ -115,10 +118,12 @@ public abstract interface class io/github/gmazzo/test/aggregation/TestAggregatio
 	public abstract fun getClasses ()Lorg/gradle/api/file/ConfigurableFileCollection;
 	public abstract fun getCoverageData ()Lorg/gradle/api/file/ConfigurableFileCollection;
 	public abstract fun getSources ()Lorg/gradle/api/file/ConfigurableFileCollection;
+	public fun supersededBy (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport$Variant;)V
 }
 
 public final class io/github/gmazzo/test/aggregation/TestAggregationCoverageReport$Variant$DefaultImpls {
 	public static fun dependsOn (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport$Variant;[Ljava/lang/Object;)V
+	public static fun supersededBy (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport$Variant;Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport$Variant;)V
 }
 
 public final class io/github/gmazzo/test/aggregation/TestAggregationPlugin : org/gradle/api/Plugin {
@@ -173,10 +178,12 @@ public abstract interface class io/github/gmazzo/test/aggregation/TestAggregatio
 
 public abstract interface class io/github/gmazzo/test/aggregation/TestAggregationResultsReport$Variant : io/github/gmazzo/test/aggregation/TestAggregationReport$BaseVariant {
 	public abstract fun getBinaryData ()Lorg/gradle/api/file/ConfigurableFileCollection;
+	public fun supersededBy (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport$Variant;)V
 }
 
 public final class io/github/gmazzo/test/aggregation/TestAggregationResultsReport$Variant$DefaultImpls {
 	public static fun dependsOn (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport$Variant;[Ljava/lang/Object;)V
+	public static fun supersededBy (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport$Variant;Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport$Variant;)V
 }
 
 public final class org/gradle/kotlin/dsl/AndroidTestAggregationDSLKt {

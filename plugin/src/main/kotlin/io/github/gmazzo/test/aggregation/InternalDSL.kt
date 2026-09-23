@@ -3,10 +3,12 @@ package io.github.gmazzo.test.aggregation
 import com.android.build.api.extension.impl.CurrentAndroidGradlePluginVersion
 import com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION
 import io.github.gmazzo.test.aggregation.AndroidSupport.enableCoverageDSLHint
+import io.github.gmazzo.test.aggregation.TestAggregationCoverageReport.Content
 import java.lang.ref.WeakReference
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.FileCollection
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.provider.Property
@@ -91,3 +93,8 @@ internal fun <Type : Task> Project.tasksMatching(
     Action<Type> = {},
 ): Provider<List<Type>> = provider { tasks.names.filter { it.matches(regex) } }
     .map { names -> names.mapNotNull(tasks::findByName) as List<Type> }
+
+internal fun FileCollection.filtered(by: Content) = asFileTree.matching {
+    include(by.includes.get())
+    exclude(by.excludes.get())
+}
