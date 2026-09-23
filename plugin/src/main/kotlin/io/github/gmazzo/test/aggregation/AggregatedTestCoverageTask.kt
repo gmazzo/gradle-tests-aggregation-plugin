@@ -3,12 +3,12 @@
 package io.github.gmazzo.test.aggregation
 
 import io.github.gmazzo.test.aggregation.TestAggregationCoverageReport.Variant
-import java.io.File
 import javax.inject.Inject
 import kotlin.io.path.ExperimentalPathApi
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
@@ -128,41 +128,22 @@ public abstract class AggregatedTestCoverageTask : DefaultTask() {
 
     private fun GroovyBuilderScope.bindData(variant: Variant) {
         "classfiles" {
-            resources(variant.classes.asFileTree)
+            resources(variant.classes)
         }
         "sourcefiles" {
-            resources(variant.sources.asFileTree)
+            resources(variant.sources)
         }
         "executiondata" {
-            resources(variant.executionData)
+            resources(variant.coverageData)
         }
     }
 
-    private fun GroovyBuilderScope.resources(files: Iterable<File>) {
+    private fun GroovyBuilderScope.resources(files: FileCollection) {
         "resources" {
-            for (file in files) {
+            for (file in files.asFileTree) {
                 "file"("file" to file.absolutePath.replace("$$", "$$$$"))
             }
         }
-    }
-
-    // Coverage directories (e.g. AGP's device `coverageDir`) may hold non-execution data files (`metadata.txt`)
-    // JaCoCo fails to load. They are filtered here and not at the source, since the published element must be
-    // the directory itself: its content does not exist yet when the aggregating project resolves it
-    private val Variant.executionData
-        get() = coverageData.files.flatMap { file ->
-            when {
-                file.isDirectory -> file.walkTopDown()
-                    .filter { it.isFile && it.extension in EXECUTION_DATA_EXTENSIONS }
-                    .toList()
-
-                file.isFile -> listOf(file)
-                else -> emptyList()
-            }
-        }
-
-    private companion object {
-        val EXECUTION_DATA_EXTENSIONS = setOf("ec", "exec")
     }
 
 }

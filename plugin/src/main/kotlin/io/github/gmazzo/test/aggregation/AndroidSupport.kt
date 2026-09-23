@@ -278,10 +278,12 @@ internal object AndroidSupport {
         private val AndroidVariant.kmpAwareName
             get() = if (project.isKMP && name == "androidMain") "android" else name
 
-        // AGP's built-in test platform runs device tests as a `Test` task, but coverage goes to `coverageDir` (AGP 9+)
+        // AGP's built-in test platform runs device tests as a `Test` task, but coverage goes to `coverageDir` (AGP 9+).
+        // Its execution data lives in `coverage_data`, next to a `metadata.txt` JaCoCo can't read. The subdirectory
+        // must be published as a path: its content doesn't exist yet when the aggregating project resolves it
         private val AbstractTestTask.suiteAwareCoverageData
             get() = try {
-                (this as? TestSuiteTestTask)?.coverageDir?.orNull
+                (this as? TestSuiteTestTask)?.coverageDir?.dir("coverage_data")?.orNull
 
             } catch (_: NoClassDefFoundError) {
                 jacocoDataFile
