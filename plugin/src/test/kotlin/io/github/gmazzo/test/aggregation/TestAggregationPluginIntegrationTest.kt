@@ -86,14 +86,20 @@ sealed class TestAggregationPluginIntegrationTest(
             .withProjectDir(projectDir)
             .withGradleVersion(gradleVersion)
             .withPluginClasspath(pluginClasspath)
-            .withArguments("aggregatedTestsReport", "-s")
+            .withArguments("aggregatedTestsReport", ":utils:aggregatedTestCoverageReport", "-s")
             .forwardOutput()
             .build()
 
         assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestsReport")?.outcome)
         assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestResultsReport")?.outcome)
         assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestCoverageReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":utils:aggregatedTestCoverageReport")?.outcome)
 
+        assertCoverage(expectedCoverageFile, projectDir)
+        assertCoverage("utils-coverage.csv", projectDir.resolve("utils"))
+    }
+
+    private fun assertCoverage(expectedCoverageFile: String, projectDir: File) {
         val expectedCoverage = checkNotNull(javaClass.getResource("/coverage-expects/$expectedCoverageFile")) {
             "Expected coverage file not found: $expectedCoverageFile"
         }.readText()
