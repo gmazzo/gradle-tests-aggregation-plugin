@@ -1,4 +1,8 @@
 package org.test.lib;
 
-class Lib {
+public class Lib {
+
+    public static void onlyCoveredByApp() {
+    }
+
 }
