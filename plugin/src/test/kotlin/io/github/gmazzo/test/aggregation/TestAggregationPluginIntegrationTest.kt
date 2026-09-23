@@ -15,11 +15,9 @@ import org.junit.jupiter.params.provider.Arguments.of
 import org.junit.jupiter.params.provider.MethodSource
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-sealed class TestAggregationPluginIntegrationTest(
-    private val baseProject: String,
-) {
+sealed class TestAggregationPluginIntegrationTest(private val platform: String) {
 
-    class Java : TestAggregationPluginIntegrationTest("project-java") {
+    class Java : TestAggregationPluginIntegrationTest("java") {
 
         fun arguments() = listOf(
             of(MIN_GRADLE_VERSION),
@@ -28,14 +26,11 @@ sealed class TestAggregationPluginIntegrationTest(
 
         @ParameterizedTest(name = "gradle={0}")
         @MethodSource("arguments")
-        fun `should aggregate projects`(gradleVersion: String) = testPlugin(
-            gradleVersion,
-            expectedCoverageFile = "java-coverage.csv",
-        )
+        fun `should aggregate projects`(gradleVersion: String) = testPlugin(gradleVersion)
 
     }
 
-    class Android : TestAggregationPluginIntegrationTest("project-android") {
+    class Android : TestAggregationPluginIntegrationTest("android") {
 
         fun arguments() = listOf(
             of(MIN_GRADLE_VERSION, MIN_AGP_VERSION, false),
@@ -53,7 +48,6 @@ sealed class TestAggregationPluginIntegrationTest(
             gradleVersion,
             pathSuffix = "-agp-${agpVersion}${if (agpTestSuites) "-test-suites" else ""}",
             pluginClasspath = "agp-$agpVersion-metadata.properties",
-            expectedCoverageFile = "android-coverage.csv",
         ) { projectDir ->
             if (agpTestSuites) {
                 projectDir.resolve("gradle.properties").appendText(
@@ -71,10 +65,10 @@ sealed class TestAggregationPluginIntegrationTest(
     protected fun testPlugin(
         gradleVersion: String,
         pathSuffix: String = "",
-        expectedCoverageFile: String,
         pluginClasspath: String? = null,
         prepareBuild: (File) -> Unit = {},
     ) {
+        val baseProject = "project-$platform"
         val projectDir = tempDir.resolve("$baseProject/gradle-${gradleVersion}${pathSuffix}")
 
         projectDir.deleteRecursively()
@@ -94,7 +88,26 @@ sealed class TestAggregationPluginIntegrationTest(
         assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestResultsReport")?.outcome)
         assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestCoverageReport")?.outcome)
 
-        val expectedCoverage = checkNotNull(javaClass.getResource("/coverage-expects/$expectedCoverageFile")) {
+        assertEquals(TaskOutcome.SUCCESS, result.task(":app:aggregatedTestsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":app:aggregatedTestResultsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":app:aggregatedTestCoverageReport")?.outcome)
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":lib:aggregatedTestsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":lib:aggregatedTestResultsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":lib:aggregatedTestCoverageReport")?.outcome)
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":utils:aggregatedTestsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":utils:aggregatedTestResultsReport")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":utils:aggregatedTestCoverageReport")?.outcome)
+
+        assertCoverage("coverage.csv", projectDir)
+        assertCoverage("app-coverage.csv", projectDir.resolve("app"))
+        assertCoverage("lib-coverage.csv", projectDir.resolve("lib"))
+        assertCoverage("utils-coverage.csv", projectDir.resolve("utils"))
+    }
+
+    private fun assertCoverage(expectedCoverageFile: String, projectDir: File) {
+        val expectedCoverage = checkNotNull(javaClass.getResource("/expects/coverage-$platform/$expectedCoverageFile")) {
             "Expected coverage file not found: $expectedCoverageFile"
         }.readText()
 

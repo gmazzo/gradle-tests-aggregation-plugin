@@ -233,19 +233,27 @@ tasks.register<Sync>("updateSpecs") {
 
     outputs.upToDateWhen { false }
 
-    tasks.test.get().ignoreFailures = true
+    with(tasks.test.get()) {
+        ignoreFailures = true
+        outputs.upToDateWhen { false } // we need to run again to update its temp folder content
+    }
 
     from(tasks.test.map { it.temporaryDir }) {
-        include("project-*/gradle-$gradleVersion*/build/reports/aggregated-test-coverage/coverage.csv")
+        val coverageRegex = "project-(\\w+)/gradle-[^/]+(?:/(\\w+))?/build/.*".toRegex()
+
+        include("project-*/gradle-$gradleVersion*/**/build/reports/aggregated-test-coverage/coverage.csv")
         eachFile {
-            path = when {
-                path.startsWith("project-java/") -> "java-coverage.csv"
-                path.startsWith("project-android/") -> "android-coverage.csv"
-                else -> error("Unexpected file: $path")
+            val match = coverageRegex.matchEntire(path)!!
+            val platform = match.groupValues[1]
+            val module = when (val module = match.groupValues[2]) {
+                "" -> ""
+                else -> "$module-"
             }
+
+            path = "coverage-${platform}/${module}coverage.csv"
         }
     }
-    into(layout.projectDirectory.dir("src/test/resources/coverage-expects"))
+    into(layout.projectDirectory.dir("src/test/resources/expects"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     includeEmptyDirs = false
 }
