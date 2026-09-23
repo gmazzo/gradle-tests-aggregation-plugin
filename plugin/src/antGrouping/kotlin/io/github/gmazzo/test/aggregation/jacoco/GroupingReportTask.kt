@@ -37,7 +37,8 @@ class GroupingReportTask : ReportTask() {
     private fun loadGroupsExecutionData()  {
         loader = GroupingExecFileLoader()
 
-        for (group in structure.children) {
+        // a single variant report binds its execution data to the root structure, without any group
+        for (group in listOf(structure) + structure.children) {
             loader.switchDataStore(group.name)
 
             for (resource in group.executiondataElement) {
