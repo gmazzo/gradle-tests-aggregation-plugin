@@ -9,6 +9,7 @@ public class ExampleInstrumentedTest {
 
     @Test
     public void sampleTest() {
+        Lib.onlyCoveredOnDevice();
     }
 
 }
