@@ -45,21 +45,6 @@ subprojects {
                 device = "Pixel 6a"
                 aggregateTests = false
             }
-            register("emulator3") {
-                device = "Pixel 7"
-            }
-        }
-
-        // makes sure reports names are consistent, since it uses the emulator-555X on its name
-        val regex = "(?<=emulator)(\\d+)".toRegex()
-        tasks.matching { it.name.matches(regex) }.configureEach task@{
-            val taskName = this@task.name.replace(regex) {
-                when (val index = it.groupValues[1].toInt() - 1) {
-                    1 -> ""
-                    else -> index.toString()
-                }
-            }
-            mustRunAfter(taskName)
         }
     }
 }

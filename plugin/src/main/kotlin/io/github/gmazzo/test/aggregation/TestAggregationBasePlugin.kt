@@ -25,7 +25,6 @@ import org.gradle.api.attributes.VerificationType.MAIN_SOURCES
 import org.gradle.api.attributes.VerificationType.TEST_RESULTS
 import org.gradle.api.attributes.VerificationType.VERIFICATION_TYPE_ATTRIBUTE
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.SetProperty
@@ -73,6 +72,10 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                 extendsFrom(jacocoAntConfig.get())
             }
 
+        tasks.withType<AggregatedTestCoverageTask>().configureEach {
+            jacocoClasspath.from(jacocoAntClasspath)
+        }
+
         dependencies {
             jacocoAntConfig(BuildConfig.JACOCO_ANT_DEPENDENCY.run { "$first:$second" })
             jacocoAntConfig(BuildConfig.JACOCO_ANT_GROUPING_DEPENDENCY) {
@@ -88,7 +91,7 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                 createResultsReport(it, reporting.baseDirectory)
             }
             registerFactory(TestAggregationCoverageReport::class.java) {
-                createCoverageReport(it, reporting.baseDirectory, jacocoAntClasspath)
+                createCoverageReport(it, reporting.baseDirectory)
             }
 
             withType<AbstractTestAggregationReport<*, *>> { configure() }
@@ -152,8 +155,7 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                     group = LifecycleBasePlugin.VERIFICATION_GROUP
                     description = "Aggregates test results for all test variants"
 
-                    dependsOn(filteredVariants.map { it.dependsOn })
-                    this@task.variants.addAll(this@report.filteredVariants.map { it.isolated })
+                    this@task.variants.addAll(this@report.filteredVariants)
                     this@task.variants.addAll(this@report.variantsFromDependencies)
                     this@task.htmlRequired.value(this@report.htmlRequired)
                     this@task.htmlOutputLocation.value(this@report.htmlOutputLocation)
@@ -162,14 +164,14 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                 }
         }
 
-    private fun Project.createCoverageReport(
-        name: String,
-        baseDirectory: DirectoryProperty,
-        jacocoAntClasspath: Provider<out Configuration>
-    ) =
+    private fun Project.createCoverageReport(name: String, baseDirectory: DirectoryProperty) =
         objects.newInstance<DefaultTestAggregationCoverageReport>(name).apply report@{
 
             variants.configureEach variant@{
+
+                aggregate
+                    .convention(true)
+                    .finalizeValueOnRead()
 
                 sources.finalizeValueOnRead()
 
@@ -216,10 +218,8 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                     group = LifecycleBasePlugin.VERIFICATION_GROUP
                     description = "Aggregates test coverage report for all test variants"
 
-                    dependsOn(filteredVariants.map { it.dependsOn })
-                    this@task.variants.addAll(this@report.filteredVariants.map { it.isolated })
+                    this@task.variants.addAll(this@report.filteredVariants)
                     this@task.variants.addAll(this@report.variantsFromDependencies)
-                    this@task.jacocoClasspath.from(jacocoAntClasspath)
                     this@task.htmlRequired.value(this@report.htmlRequired)
                     this@task.htmlOutputLocation.value(this@report.htmlOutputLocation)
                     this@task.xmlRequired.value(this@report.xmlRequired)
@@ -228,21 +228,6 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                     this@task.csvOutputLocation.value(this@report.csvOutputLocation)
                 }
         }
-
-    context(project: Project)
-    private val TestAggregationResultsReport.Variant.isolated
-        get() = project.objects.newInstance<TestAggregationResultsReport.Variant>(name).apply new@{
-            this@new.binaryData.from(this@isolated.binaryData).disallowChanges()
-        }
-
-    context(project: Project, report: TestAggregationCoverageReport)
-    private val TestAggregationCoverageReport.Variant.isolated
-        get() = project.objects.newInstance<TestAggregationCoverageReport.Variant>(this@isolated.name)
-            .apply new@{
-                this@new.sources.from(this@isolated.sources).disallowChanges()
-                this@new.classes.from(this@isolated.classes.contentFiltered).disallowChanges()
-                this@new.coverageData.from(this@isolated.coverageData).disallowChanges()
-            }
 
     context(project: Project)
     private fun AbstractTestAggregationReport<*, *>.configure() {
@@ -396,7 +381,7 @@ public class TestAggregationBasePlugin : Plugin<Project> {
                     val depsClasses = aggregateFrom(artifact) {
                         attribute(REPORT_VARIANT_ATTRIBUTE, variantName)
                         attribute(LIBRARY_ELEMENTS_ATTRIBUTE, project.objects.named(CLASSES))
-                    }.map { it.files.contentFiltered }
+                    }.map { it.files.filtered(content) }
 
                     val depsCoverageData = aggregateFrom(artifact) {
                         attribute(REPORT_VARIANT_ATTRIBUTE, variantName)
@@ -479,13 +464,6 @@ public class TestAggregationBasePlugin : Plugin<Project> {
 
     private val ResolvedArtifactResult.projectPath
         get() = (id.componentIdentifier as ProjectComponentIdentifier).projectPath
-
-    context(report: TestAggregationCoverageReport)
-    private val FileCollection.contentFiltered
-        get() = asFileTree.matching {
-            include(report.content.includes.get())
-            exclude(report.content.excludes.get())
-        }
 
     internal abstract class VariantsFileValueSource :
         ValueSource<File, VariantsFileValueSourceParams> {

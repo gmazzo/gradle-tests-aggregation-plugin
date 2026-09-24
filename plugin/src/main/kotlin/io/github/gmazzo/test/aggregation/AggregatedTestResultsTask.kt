@@ -28,6 +28,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.newInstance
+import org.gradle.kotlin.dsl.setProperty
 
 @CacheableTask
 public abstract class AggregatedTestResultsTask : DefaultTask() {
@@ -35,14 +36,22 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
     @get:Inject
     protected abstract val objects: ObjectFactory
 
+    @Transient
     @get:Internal
-    public abstract val variants: SetProperty<Variant>
+    public val variants: SetProperty<Variant> = objects.setProperty()
+
+    @get:Internal
+    protected abstract val isolatedVariants: SetProperty<Variant>
+
+    @get:Input
+    internal val variantsNames =
+        isolatedVariants.map { v -> v.map { it.name } }
 
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.NONE)
     @get:SkipWhenEmpty
     internal val variantsBinaryData =
-        variants.map { v -> v.map { it.binaryData.asFileTree } }
+        isolatedVariants.map { v -> v.map { it.binaryData.asFileTree } }
 
     @get:Input
     @get:Optional
@@ -60,6 +69,26 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
     @get:Optional
     public abstract val junitXMLOutputLocation: DirectoryProperty
 
+    init {
+        dependsOn(variants.map { set -> set.map { it.dependsOn } })
+
+        isolatedVariants
+            .value(variants.map { set -> set.map { it.isolated }})
+            .finalizeValueOnRead()
+
+        htmlRequired
+            .convention(true)
+
+        htmlOutputLocation
+            .convention(project.layout.buildDirectory.dir("reports/$name/html"))
+
+        junitXMLRequired
+            .convention(false)
+
+        junitXMLOutputLocation
+            .convention(project.layout.buildDirectory.dir("reports/$name/junit-xml"))
+    }
+
     @TaskAction
     internal fun generateHTMLReport() {
         val outputDir = htmlOutputLocation.asFile.orNull?.toPath() ?: return
@@ -67,7 +96,7 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
         if (!htmlRequired.getOrElse(true)) return
 
         val generator = objects.newInstance<GenericHtmlTestReportGenerator>(outputDir)
-        generator.generate(variants.get().flatMap { it.binaryDataDirs })
+        generator.generate(isolatedVariants.get().flatMap { it.binaryDataDirs })
 
         logger.lifecycle("View generated report at ${outputDir.resolve("index.html").toUri()}")
     }
@@ -84,7 +113,7 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
             .newInstance<JunitXmlTestReportGenerator>(reportDir, options)
             .generate(listOf(binaryDir))
 
-        for (variant in variants.get()) {
+        for (variant in isolatedVariants.get()) {
             val variantOutDir = outputDir.resolve(variant.name.replace(':', '_'))
             val binaryDirs = variant.binaryDataDirs
 
@@ -104,6 +133,11 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
             }
         }
     }
+
+    private val Variant.isolated
+        get() = objects.newInstance<Variant>(name).apply new@{
+            this@new.binaryData.from(this@isolated.binaryData).disallowChanges()
+        }
 
     private val Variant.binaryDataDirs
         get() = binaryData.asFileTree.mapNotNullTo(linkedSetOf()) {

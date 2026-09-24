@@ -117,6 +117,24 @@ Then run:
 ./gradlew aggregateTestsFrom
 ```
 
+## Unifying variants of the same module
+
+By default, the plugin will configure independent report entries for each detected variant.
+
+In case you want to unify the results of multiple variants into a single report entry, you can use the
+`supersededBy` DSL to declare which variant will be the one to collect the data from the others.
+
+For instance, the following configuration will unify all variants into a single report entry called `single`:
+```kotlin
+aggregatedTestCoverage.variants {
+    val single = create("single")
+
+    all {
+        if (this != single) { supersededBy(single) }
+    }
+}
+```
+
 ## Choosing which variants of each module are aggregated
 
 By default, any detected variant (JVM test suites, Android Variant or Kotlin Target) will be
