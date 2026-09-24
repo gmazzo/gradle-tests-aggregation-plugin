@@ -45,6 +45,21 @@ subprojects {
                 device = "Pixel 6a"
                 aggregateTests = false
             }
+            register("emulator3") {
+                device = "Pixel 7"
+            }
+        }
+
+        // makes sure reports names are consistent, since it uses the emulator-555X on its name
+        val regex = "(?<=emulator)(\\d+)".toRegex()
+        tasks.matching { it.name.matches(regex) }.configureEach task@{
+            val taskName = this@task.name.replace(regex) {
+                when (val index = it.groupValues[1].toInt() - 1) {
+                    1 -> ""
+                    else -> index.toString()
+                }
+            }
+            mustRunAfter(taskName)
         }
     }
 }
@@ -58,7 +73,6 @@ fun Sync.reportsSpec(): CopySpec {
     val attrsRegEx = "\\b(timestamp|hostname)=\"[^\"]+\"\\s+".toRegex()
     val spansTimeRegEx =
         "\\d{4}-\\d?\\d-\\d?\\d \\d?\\d:\\d?\\d:\\d?\\d(?:\\.\\d+ \\w+)?".toRegex()
-    val emulatorName = "emulator-\\d+(\\s*-?\\s*\\d*)?".toRegex()
     val androidHome = providers.environmentVariable("ANDROID_HOME").get()
     val coverageTask = tasks.aggregatedTestCoverageReport
     val resultsTypes = tasks.aggregatedTestResultsReport
@@ -78,13 +92,9 @@ fun Sync.reportsSpec(): CopySpec {
                     .replace(dataSortRegEx, "data-sort-value=\"100\"")
                     .replace(tookRegEx, "0.100s")
                     .replace(spansTimeRegEx, "2016-01-01 00:00")
-                    .replace(emulatorName, "emulator-XXXX")
                     .replace(rootDir, "")
                     .replace(androidHome, "~/.android/sdk")
             }
-        }
-        eachFile {
-            path = path.replace(emulatorName, "emulator-XXXX")
         }
         includeEmptyDirs = false
         doLast {
