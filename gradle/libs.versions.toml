@@ -54,6 +54,7 @@ kotlin-ksp = { id = "com.google.devtools.ksp", version = "2.3.12" }
 kotlin-samReceiver = { id = "org.jetbrains.kotlin.plugin.sam.with.receiver", version.ref = "kotlin" }
 gitVersion = { id = "io.github.gmazzo.gitversion", version = "1.6.1" }
 gradle-pluginPublish = { id = "com.gradle.plugin-publish", version = "2.2.1" }
+gradle-pluginCompatibility = { id = "org.gradle.plugin-compatibility", version = "1.1.0" }
 gradle-testkit-jacoco = { id = "io.github.gmazzo.gradle.testkit.jacoco", version = "1.1.1" }
 mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.37.0" }
 publicationsReport = { id = "io.github.gmazzo.publications.report", version = "1.4.1" }

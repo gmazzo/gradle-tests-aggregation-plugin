@@ -3,6 +3,8 @@ plugins {
     id("jacoco")
 }
 
+apply(from: "../module-convention.gradle")
+
 dependencies {
     testImplementation("junit:junit:4.13")
 }

@@ -2,6 +2,8 @@ plugins {
     id("java-library")
 }
 
+apply(from: "../module-convention.gradle")
+
 java {
     registerFeature("foo") {
         usingSourceSet(sourceSets.maybeCreate("foo"))
