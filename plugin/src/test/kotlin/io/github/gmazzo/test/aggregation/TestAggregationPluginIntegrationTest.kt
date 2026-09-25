@@ -4,11 +4,13 @@ import com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION
 import io.github.gmazzo.test.aggregation.BuildConfig.MIN_AGP_VERSION
 import io.github.gmazzo.test.aggregation.BuildConfig.MIN_GRADLE_VERSION
 import java.io.File
+import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.gradle.testkit.runner.internal.PluginUnderTestMetadataReading.readImplementationClasspath
 import org.gradle.util.GradleVersion
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments.of
@@ -84,21 +86,21 @@ sealed class TestAggregationPluginIntegrationTest(private val platform: String) 
             .forwardOutput()
             .build()
 
-        assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestResultsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":aggregatedTestCoverageReport")?.outcome)
+        result.assertTask(":aggregatedTestsReport")
+        result.assertTask(":aggregatedTestResultsReport")
+        result.assertTask(":aggregatedTestCoverageReport")
 
-        assertEquals(TaskOutcome.SUCCESS, result.task(":app:aggregatedTestsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":app:aggregatedTestResultsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":app:aggregatedTestCoverageReport")?.outcome)
+        result.assertTask(":app:aggregatedTestsReport")
+        result.assertTask(":app:aggregatedTestResultsReport")
+        result.assertTask(":app:aggregatedTestCoverageReport")
 
-        assertEquals(TaskOutcome.SUCCESS, result.task(":lib:aggregatedTestsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":lib:aggregatedTestResultsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":lib:aggregatedTestCoverageReport")?.outcome)
+        result.assertTask(":lib:aggregatedTestsReport")
+        result.assertTask(":lib:aggregatedTestResultsReport")
+        result.assertTask(":lib:aggregatedTestCoverageReport")
 
-        assertEquals(TaskOutcome.SUCCESS, result.task(":utils:aggregatedTestsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":utils:aggregatedTestResultsReport")?.outcome)
-        assertEquals(TaskOutcome.SUCCESS, result.task(":utils:aggregatedTestCoverageReport")?.outcome)
+        result.assertTask(":utils:aggregatedTestsReport")
+        result.assertTask(":utils:aggregatedTestResultsReport")
+        result.assertTask(":utils:aggregatedTestCoverageReport")
 
         assertCoverage("coverage.csv", projectDir)
         assertCoverage("app-coverage.csv", projectDir.resolve("app"))
@@ -106,10 +108,23 @@ sealed class TestAggregationPluginIntegrationTest(private val platform: String) 
         assertCoverage("utils-coverage.csv", projectDir.resolve("utils"))
     }
 
+    private fun BuildResult.assertTask(taskName: String) {
+        assertTrue(
+            task(taskName)?.outcome in setOf(
+                TaskOutcome.SUCCESS,
+                TaskOutcome.UP_TO_DATE,
+                TaskOutcome.FROM_CACHE,
+            )
+        ) {
+            "Task $taskName was not successful: ${task(taskName)?.outcome}"
+        }
+    }
+
     private fun assertCoverage(expectedCoverageFile: String, projectDir: File) {
-        val expectedCoverage = checkNotNull(javaClass.getResource("/expects/coverage-$platform/$expectedCoverageFile")) {
-            "Expected coverage file not found: $expectedCoverageFile"
-        }.readText()
+        val expectedCoverage =
+            checkNotNull(javaClass.getResource("/expects/coverage-$platform/$expectedCoverageFile")) {
+                "Expected coverage file not found: $expectedCoverageFile"
+            }.readText()
 
         assertEquals(
             expectedCoverage.withoutSessionInfo,

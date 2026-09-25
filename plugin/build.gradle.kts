@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalAbiValidation::class)
 
 import org.gradle.api.internal.catalog.ExternalModuleDependencyFactory.PluginNotationSupplier
+import org.gradle.plugin.compatibility.compatibility
 import org.gradle.plugin.devel.tasks.PluginUnderTestMetadata.METADATA_FILE_NAME
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
@@ -13,6 +14,7 @@ plugins {
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.gitVersion)
     alias(libs.plugins.gradle.pluginPublish)
+    alias(libs.plugins.gradle.pluginCompatibility)
     alias(libs.plugins.gradle.testkit.jacoco)
     alias(libs.plugins.publicationsReport)
     `jacoco-report-aggregation`
@@ -67,6 +69,12 @@ gradlePlugin {
         displayName = name
         implementationClass = "io.github.gmazzo.test.aggregation.TestAggregationPlugin"
         description = "Simple test aggregation support for Android/JVM modules"
+        compatibility {
+            features {
+                configurationCache = true
+                isolatedProjects = true
+            }
+        }
         tags.addAll(
             "android",
             "agp",
