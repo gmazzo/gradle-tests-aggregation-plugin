@@ -1,6 +1,5 @@
 apply(plugin: "jacoco")
 apply(plugin: "io.github.gmazzo.test.aggregation")
-rootProject.dependencies { aggregateTestsFrom(project) }
 
 tasks.withType(Test).configureEach {
     useJUnit()

@@ -4,3 +4,9 @@ plugins {
 }
 
 apply(from: "module-convention.gradle")
+
+dependencies {
+    aggregateTestsFrom(project(":app"))
+    aggregateTestsFrom(project(":lib"))
+    aggregateTestsFrom(project(":utils"))
+}
