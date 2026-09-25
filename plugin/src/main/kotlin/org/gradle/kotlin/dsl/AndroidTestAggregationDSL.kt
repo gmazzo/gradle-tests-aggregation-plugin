@@ -7,21 +7,12 @@ import com.android.build.api.dsl.TestOptions
 import com.android.build.api.variant.Component
 import com.android.build.api.variant.TestComponent
 import com.android.build.api.variant.Variant
-import io.github.gmazzo.android.test.aggregation.OLD_API_DEPRECATION_MESSAGE
 import io.github.gmazzo.test.aggregation.TestAggregationCoverageReport
 import io.github.gmazzo.test.aggregation.TestAggregationReportAndroidExtension
 import io.github.gmazzo.test.aggregation.TestAggregationResultsReport
 import io.github.gmazzo.test.aggregation.aggregateTests
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.provider.Property
-
-@Deprecated(OLD_API_DEPRECATION_MESSAGE)
-public val BuildType.aggregateTestCoverage: Property<Boolean>
-    get() = extensions.getByName<Property<Boolean>>(::aggregateTestCoverage.name)
-
-@Deprecated(OLD_API_DEPRECATION_MESSAGE)
-public val ProductFlavor.aggregateTestCoverage: Property<Boolean>
-    get() = extensions.getByName<Property<Boolean>>(::aggregateTestCoverage.name)
 
 public fun TestAggregationResultsReport.addAndroidVariant(androidVariant: Variant) {
     (this as ExtensionAware).the<TestAggregationReportAndroidExtension>()(androidVariant)
