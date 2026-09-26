@@ -1,10 +1,9 @@
 package io.github.gmazzo.test.aggregation
 
-import com.android.build.api.extension.impl.CurrentAndroidGradlePluginVersion
-import com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION
 import io.github.gmazzo.test.aggregation.AndroidSupport.enableCoverageDSLHint
 import io.github.gmazzo.test.aggregation.TestAggregationCoverageReport.Content
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicBoolean
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -12,35 +11,11 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.property
 import org.gradle.kotlin.dsl.typeOf
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
-import org.gradle.util.GradleVersion
-
-private const val AGGREGATE_EXTENSION_NAME = "aggregateTests"
-
-internal fun Project.ensureMinVersions() {
-    if (GradleVersion.current() < GradleVersion.version(BuildConfig.MIN_GRADLE_VERSION)) {
-        error("This plugin requires Gradle ${BuildConfig.MIN_GRADLE_VERSION}} or later. Current is ${GradleVersion.current()}")
-    }
-    if (GradleVersion.version(agpVersion) < GradleVersion.version(BuildConfig.MIN_AGP_VERSION)) {
-        error("This plugin requires Gradle ${BuildConfig.MIN_AGP_VERSION} or later. Current is $agpVersion")
-    }
-}
-
-private val agpVersion
-    get() = runCatching { CurrentAndroidGradlePluginVersion.CURRENT_AGP_VERSION.version }.getOrElse { ex1 ->
-        runCatching { ANDROID_GRADLE_PLUGIN_VERSION }.getOrElse { ex2 ->
-            ex1.addSuppressed(ex2)
-            throw IllegalStateException(
-                "Failed to get current AGP version, ${BuildConfig.MIN_AGP_VERSION} or later is required.",
-                ex1
-            )
-        }
-    }.replace("-.*$".toRegex(), "")
 
 internal lateinit var objectsRef: WeakReference<ObjectFactory>
 
@@ -50,16 +25,28 @@ private val objects: ObjectFactory
     }
 
 @Suppress("UNCHECKED_CAST")
-internal val ExtensionAware.aggregateTests: Property<Boolean>
-    get() = when (val existing = extensions.findByName(AGGREGATE_EXTENSION_NAME)) {
-        null -> objects
-            .property<Boolean>()
-            .convention(true)
-            .apply { finalizeValueOnRead() }
-            .also { extensions.add(typeOf<Property<Boolean>>(), AGGREGATE_EXTENSION_NAME, it) }
+private fun ExtensionAware.createAggregateExtension(name: String, defaultValue: Property<Boolean>? = null): Property<Boolean> =
+    when (val existing = extensions.findByName(name)) {
+        null -> objects.property<Boolean>().apply {
+            if (defaultValue != null) convention(defaultValue) else convention(true)
+            finalizeValueOnRead()
+            extensions.add(typeOf<Property<Boolean>>(), name, this)
+        }
 
         else -> existing as Property<Boolean>
     }
+
+@Suppress("UNCHECKED_CAST")
+internal val ExtensionAware.aggregateTests: Property<Boolean>
+    get() = createAggregateExtension(::aggregateTests.name)
+
+@Suppress("UNCHECKED_CAST")
+internal val ExtensionAware.aggregateTestResults: Property<Boolean>
+    get() = createAggregateExtension(::aggregateTestResults.name, aggregateTests)
+
+@Suppress("UNCHECKED_CAST")
+internal val ExtensionAware.aggregateTestCoverage: Property<Boolean>
+    get() = createAggregateExtension(::aggregateTestCoverage.name, aggregateTests)
 
 internal fun <Type : Task> Type.coverageData(
     getter: Type.() -> Any? = { jacocoDataFile },
@@ -79,20 +66,25 @@ private val Task.missingCoverageHint
 internal val String.capitalized: String
     get() = replaceFirstChar { it.uppercase() }
 
-@Suppress("UNCHECKED_CAST")
-internal fun <Type : Task> Project.tasksMatching(
+internal fun Project.tasksMatching(
     name: String,
-    configure:
-    Action<Type> = {},
-) = tasksMatching(Regex.fromLiteral(name), configure)
+    configure: Action<Task>,
+) = tasksMatching(regex = Regex.fromLiteral(name), configure = configure)
 
-@Suppress("UNCHECKED_CAST")
-internal fun <Type : Task> Project.tasksMatching(
+internal fun Project.tasksMatching(
     regex: Regex,
-    configure:
-    Action<Type> = {},
-): Provider<List<Type>> = provider { tasks.names.filter { it.matches(regex) } }
-    .map { names -> names.mapNotNull(tasks::findByName) as List<Type> }
+    configuredFlag: AtomicBoolean = AtomicBoolean(false),
+    configure: Action<Task>,
+) = provider { tasks.names.filter { it.matches(regex) } }
+    .map { names -> names.mapNotNull(tasks::findByName) }
+    .map { list ->
+        if (!configuredFlag.getAndSet(true)) {
+            for (task in list) {
+                configure.execute(task)
+            }
+        }
+        list
+    }
 
 internal fun FileCollection.filtered(by: Content) = asFileTree.matching {
     include(by.includes.get())

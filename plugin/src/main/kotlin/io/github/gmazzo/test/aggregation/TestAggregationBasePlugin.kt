@@ -40,6 +40,7 @@ import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.testing.jacoco.plugins.JacocoPlugin.ANT_CONFIGURATION_NAME
+import org.gradle.util.GradleVersion
 
 public class TestAggregationBasePlugin : Plugin<Project> {
 
@@ -57,6 +58,10 @@ public class TestAggregationBasePlugin : Plugin<Project> {
     }
 
     override fun apply(target: Project): Unit = with(target) {
+        if (GradleVersion.current() < GradleVersion.version(BuildConfig.MIN_GRADLE_VERSION)) {
+            error("This plugin requires Gradle ${BuildConfig.MIN_GRADLE_VERSION}} or later. Current is ${GradleVersion.current()}")
+        }
+
         objectsRef = WeakReference(objects)
 
         apply(plugin = "reporting-base")

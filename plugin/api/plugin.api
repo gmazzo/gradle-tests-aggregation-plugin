@@ -148,6 +148,10 @@ public final class org/gradle/kotlin/dsl/AndroidTestAggregationDSLKt {
 	public static final fun addAndroidVariant (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport;Lcom/android/build/api/variant/Variant;)V
 	public static final fun addAndroidVariant (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport;Lcom/android/build/api/variant/Variant;)V
 	public static final fun getAggregateConnectedDevices (Lcom/android/build/api/dsl/TestOptions;)Lorg/gradle/api/provider/Property;
+	public static final fun getAggregateTestCoverage (Lcom/android/build/gradle/internal/tasks/ManagedDeviceTestTask;)Lorg/gradle/api/provider/Property;
+	public static final fun getAggregateTestCoverage (Lcom/android/build/gradle/tasks/factory/AndroidUnitTest;)Lorg/gradle/api/provider/Property;
+	public static final fun getAggregateTestResults (Lcom/android/build/gradle/internal/tasks/ManagedDeviceTestTask;)Lorg/gradle/api/provider/Property;
+	public static final fun getAggregateTestResults (Lcom/android/build/gradle/tasks/factory/AndroidUnitTest;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/dsl/Device;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/variant/TestComponent;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lcom/android/build/api/variant/Variant;)Lorg/gradle/api/provider/Property;
@@ -156,13 +160,15 @@ public final class org/gradle/kotlin/dsl/AndroidTestAggregationDSLKt {
 public final class org/gradle/kotlin/dsl/KotlinTestAggregationDSLKt {
 	public static final fun addKotlinTarget (Lio/github/gmazzo/test/aggregation/TestAggregationCoverageReport;Lorg/jetbrains/kotlin/gradle/plugin/KotlinTarget;)V
 	public static final fun addKotlinTarget (Lio/github/gmazzo/test/aggregation/TestAggregationResultsReport;Lorg/jetbrains/kotlin/gradle/plugin/KotlinTarget;)V
+	public static final fun getAggregateTestCoverage (Lorg/jetbrains/kotlin/gradle/testing/internal/KotlinTestReport;)Lorg/gradle/api/provider/Property;
+	public static final fun getAggregateTestResults (Lorg/jetbrains/kotlin/gradle/testing/internal/KotlinTestReport;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lorg/jetbrains/kotlin/gradle/plugin/KotlinTarget;)Lorg/gradle/api/provider/Property;
-	public static final fun getAggregateTests (Lorg/jetbrains/kotlin/gradle/testing/internal/KotlinTestReport;)Lorg/gradle/api/provider/Property;
 }
 
 public final class org/gradle/kotlin/dsl/TestAggregationDSLKt {
+	public static final fun getAggregateTestCoverage (Lorg/gradle/api/tasks/testing/AbstractTestTask;)Lorg/gradle/api/provider/Property;
+	public static final fun getAggregateTestResults (Lorg/gradle/api/tasks/testing/AbstractTestTask;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lorg/gradle/api/plugins/jvm/JvmTestSuite;)Lorg/gradle/api/provider/Property;
 	public static final fun getAggregateTests (Lorg/gradle/api/tasks/SourceSet;)Lorg/gradle/api/provider/Property;
-	public static final fun getAggregateTests (Lorg/gradle/api/tasks/testing/AbstractTestTask;)Lorg/gradle/api/provider/Property;
 }
 
