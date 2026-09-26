@@ -14,7 +14,6 @@ plugins {
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.gitVersion)
     alias(libs.plugins.gradle.pluginPublish)
-    alias(libs.plugins.gradle.pluginCompatibility)
     alias(libs.plugins.gradle.testkit.jacoco)
     alias(libs.plugins.publicationsReport)
     `jacoco-report-aggregation`
