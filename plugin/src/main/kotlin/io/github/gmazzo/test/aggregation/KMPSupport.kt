@@ -71,17 +71,22 @@ internal object KMPSupport {
             val variant = report.variants.maybeCreate(target.name)
             variant.aggregate.convention(target.aggregateTests)
 
-
             when (target) {
                 is KotlinTargetWithTests<*, *> -> {
                     target.testRuns.all run@{
                         if (this@run !is ExecutionTaskHolder<*>) return@run
 
-                        variant.dependsOn(executionTask)
-                        variant.binaryData.from(executionTask.map {
-                            when (it) {
-                                is AbstractTestTask -> it.binaryResultsDirectory
-                                is KotlinTestReport -> it.testResults
+                        executionTask.configure task@{
+                            this@task.aggregateTestResults
+                                .convention(variant.aggregate)
+                        }
+                        variant.dependsOn(executionTask.map {
+                            if (it.aggregateTestResults.get()) it else emptyArray<Any>()
+                        })
+                        variant.binaryData.from(executionTask.map { task ->
+                            when (val task = task.takeIf { it.aggregateTestResults.get() }) {
+                                is AbstractTestTask -> task.binaryResultsDirectory
+                                is KotlinTestReport -> task.testResults
                                 else -> emptyArray<Any>()
                             }
                         })
@@ -90,10 +95,19 @@ internal object KMPSupport {
 
                 is KotlinTargetWithBinaries<*, *> -> {
                     val testTasks = target.project
-                        .tasksMatching<AbstractTestTask>(name = "${target.disambiguationClassifier}Test")
+                        .tasksMatching(name = "${target.disambiguationClassifier}Test") task@{
+                        this@task.aggregateTestResults
+                            .convention(variant.aggregate)
+                    }
 
-                    variant.dependsOn(testTasks)
-                    variant.binaryData.from(testTasks.map { t -> t.map { it.binaryResultsDirectory } })
+                    variant.dependsOn(testTasks.map { list ->
+                        list.filter { it.aggregateTestResults.get() }
+                    })
+                    variant.binaryData.from(testTasks.map { list ->
+                        list.mapNotNull {
+                            if (it.aggregateTestResults.get()) (it as AbstractTestTask).binaryResultsDirectory else null
+                        }
+                    })
                 }
 
                 else -> error("Test aggregation is only supported for targets with tests, but ${target.name} does not have any test runs")
@@ -128,14 +142,14 @@ internal object KMPSupport {
                 if (this@run !is ExecutionTaskHolder<*>) return@run
 
                 executionTask.configure task@{
-                    this@task.aggregateTests
+                    this@task.aggregateTestCoverage
                         .convention(targetAggregate)
                 }
                 variant.dependsOn(executionTask.map {
-                    if (it.aggregateTests.get()) it else emptyArray<Any>()
+                    if (it.aggregateTestCoverage.get()) it else emptyArray<Any>()
                 })
                 variant.coverageData.from(executionTask.map { task ->
-                    when (val task = task.takeIf { it.aggregateTests.get() }) {
+                    when (val task = task.takeIf { it.aggregateTestCoverage.get() }) {
                         is AbstractTestTask -> task.coverageData()
                         is KotlinTestReport -> task.testTasks.map { it.coverageData() }
                         else -> null

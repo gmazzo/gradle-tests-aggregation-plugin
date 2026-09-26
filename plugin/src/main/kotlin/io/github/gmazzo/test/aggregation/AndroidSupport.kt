@@ -2,6 +2,7 @@ package io.github.gmazzo.test.aggregation
 
 import com.android.build.api.artifact.ScopedArtifact
 import com.android.build.api.dsl.CommonExtension
+import com.android.build.api.extension.impl.CurrentAndroidGradlePluginVersion
 import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.DeviceTest
 import com.android.build.api.variant.HostTest
@@ -14,6 +15,7 @@ import com.android.build.gradle.internal.tasks.ManagedDeviceInstrumentationTestT
 import com.android.build.gradle.internal.tasks.ManagedDeviceTestTask
 import com.android.build.gradle.tasks.TestSuiteTestTask
 import com.android.build.gradle.tasks.factory.AndroidUnitTest
+import com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -35,10 +37,15 @@ import org.gradle.kotlin.dsl.setProperty
 import org.gradle.kotlin.dsl.typeOf
 import org.gradle.kotlin.dsl.withType
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+import org.gradle.util.GradleVersion
 
 internal object AndroidSupport {
 
     fun Project.installBase() = configure<ReportingExtension> {
+        if (GradleVersion.version(agpVersion) < GradleVersion.version(BuildConfig.MIN_AGP_VERSION)) {
+            error("This plugin requires Gradle ${BuildConfig.MIN_AGP_VERSION} or later. Current is $agpVersion")
+        }
+
         if (!isKMP) {
             addRobolectricTestsSupport()
         }
@@ -144,7 +151,7 @@ internal object AndroidSupport {
     ) = when (component) {
         is HostTest -> project.tasksMatching(
             regex = "(test|validate)${Regex.escape(component.name.capitalized)}".toRegex(),
-            configure
+            configure = configure,
         )
 
         is DeviceTest -> project.tasksMatching(
@@ -154,7 +161,7 @@ internal object AndroidSupport {
                 postfix = ")${Regex.escape(component.name.capitalized)}",
                 transform = Regex::escape
             ).toRegex(),
-            configure
+            configure = configure,
         )
 
         else -> provider { emptyList() }
@@ -168,6 +175,17 @@ internal object AndroidSupport {
 
     private val Project.isKMP
         get() = plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")
+
+    private val agpVersion
+        get() = runCatching { CurrentAndroidGradlePluginVersion.CURRENT_AGP_VERSION.version }.getOrElse { ex1 ->
+            runCatching { ANDROID_GRADLE_PLUGIN_VERSION }.getOrElse { ex2 ->
+                ex1.addSuppressed(ex2)
+                throw IllegalStateException(
+                    "Failed to get current AGP version, ${BuildConfig.MIN_AGP_VERSION} or later is required.",
+                    ex1
+                )
+            }
+        }.replace("-.*$".toRegex(), "")
 
     private val AndroidVariant.testComponents
         get(): List<TestComponent> = nestedComponents
@@ -194,20 +212,18 @@ internal object AndroidSupport {
         override fun invoke(androidVariant: AndroidVariant) {
             for (testComponent in androidVariant.testComponents) {
                 val testTasks = project.testTasksOf(devices.get(), testComponent) task@{
-                    this@task.aggregateTests
+                    this@task.aggregateTestResults
                         .convention(testComponent.aggregateTests)
                 }
 
                 val variant = report.variants.maybeCreate(testComponent.name)
                 variant.dependsOn(testTasks.map { list ->
-                    list.mapNotNull {
-                        if (it.aggregateTests.get()) it else null
-                    }
+                    list.filter { it.aggregateTestResults.get() }
                 })
                 variant.aggregate.convention(testComponent.aggregateTests)
                 variant.binaryData.from(testTasks.map { list ->
                     list.mapNotNull { task ->
-                        when (val task = task.takeIf { it.aggregateTests.get() }) {
+                        when (val task = task.takeIf { it.aggregateTestResults.get() }) {
                             is AbstractTestTask -> task.binaryResultsDirectory
                             is AndroidTestTask -> task.resultsDir
                             else -> null
@@ -251,18 +267,16 @@ internal object AndroidSupport {
             for (testComponent in androidVariant.testComponents) {
                 val testAggregate = testComponent.aggregateTests
                 val testTasks = project.testTasksOf(devices.get(), testComponent) task@{
-                    this@task.aggregateTests
+                    this@task.aggregateTestCoverage
                         .convention(testAggregate)
                 }
 
                 variant.dependsOn(testTasks.map { list ->
-                    list.mapNotNull {
-                        if (it.aggregateTests.get()) it else null
-                    }
+                    list.filter { it.aggregateTestCoverage.get() }
                 })
                 variant.coverageData.from(testTasks.map { list ->
                     list.mapNotNull { task ->
-                        when (val task = task.takeIf { it.aggregateTests.get() }) {
+                        when (val task = task.takeIf { it.aggregateTestCoverage.get() }) {
                             is AndroidUnitTest -> task.coverageData { jacocoCoverageOutputFile.orNull }
                             is DeviceProviderInstrumentTestTask -> task.coverageData { coverageDirectory.orNull }
                             is ManagedDeviceTestTask -> task.coverageData { getCoverageDirectory().orNull }

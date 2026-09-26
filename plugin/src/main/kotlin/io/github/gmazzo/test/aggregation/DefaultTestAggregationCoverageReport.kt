@@ -29,14 +29,14 @@ internal abstract class DefaultTestAggregationCoverageReport @Inject constructor
                 .convention(mainAggregate)
 
             variant.dependsOn(testTask.map {
-                if (it.aggregateTests.get()) it else emptyArray<Any>()
+                if (it.aggregateTestCoverage.get()) it else emptyArray<Any>()
             })
             variant.coverageData.from(testTask.map {
-                (if (it.aggregateTests.get()) it.coverageData() else null) ?: emptyArray<Any>()
+                (if (it.aggregateTestCoverage.get()) it.coverageData() else null) ?: emptyArray<Any>()
             })
 
             testTask.configure task@{
-                this@task.aggregateTests
+                this@task.aggregateTestCoverage
                     .convention(suiteAggregate)
             }
         }

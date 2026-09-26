@@ -20,14 +20,14 @@ internal abstract class DefaultTestAggregationResultsReport @Inject constructor(
 
         testSuite.targets.all target@{
             variant.dependsOn(testTask.map {
-                if (it.aggregateTests.get()) it else emptyArray<Any>()
+                if (it.aggregateTestResults.get()) it else emptyArray<Any>()
             })
             variant.binaryData.from(testTask.map {
-                if (it.aggregateTests.get()) it.binaryResultsDirectory else emptyArray<Any>()
+                if (it.aggregateTestResults.get()) it.binaryResultsDirectory else emptyArray<Any>()
             })
 
             testTask.configure task@{
-                this@task.aggregateTests
+                this@task.aggregateTestResults
                     .convention(suiteAggregate)
             }
         }
