@@ -1,6 +1,6 @@
 package com.example.myapplication
 
-import androidx.fragment.app.testing.launchFragmentInContainer
+import androidx.test.core.app.launchActivity
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -12,7 +12,11 @@ class StageUnitTest {
 
     @Test
     fun shouldStart() {
-        launchFragmentInContainer<SecondFragment>()
+        launchActivity<MainActivity>().onActivity {
+            it.supportFragmentManager.beginTransaction()
+                .add(SecondFragment(), "second")
+                .commitNow()
+        }
     }
 
 }
