@@ -17,7 +17,6 @@ androidx-annotation = "androidx.annotation:annotation:1.10.0"
 androidx-compose = { module = "androidx.compose:compose-bom", version = "2026.09.00" }
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-constraintlayout = "androidx.constraintlayout:constraintlayout:2.2.2"
-androidx-fragment-testing = "androidx.fragment:fragment-testing:1.9.0"
 androidx-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "androidx-lifecycle" }
 androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidx-navigation" }
 androidx-navigation-ui = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidx-navigation" }

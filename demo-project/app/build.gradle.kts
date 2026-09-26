@@ -71,10 +71,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
 
-    debugImplementation(libs.androidx.fragment.testing)
-
     testImplementation(libs.androidx.test.core.ktx)
-    testImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.robolectric)
 }
