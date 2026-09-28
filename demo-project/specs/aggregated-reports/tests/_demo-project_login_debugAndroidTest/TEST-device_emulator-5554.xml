@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="emulator (emulator-XXXX)" tests="1" skipped="0" failures="0" errors="0" time="0.100s">
+<testsuite name="emulator (emulator-5554 - 13)" tests="1" skipped="0" failures="0" errors="0" time="0.100s">
   <properties>
     <property name="android-test.test-count" value="1"/>
-    <property name="android-test.device-display-name" value="emulator (emulator-XXXX)"/>
+    <property name="android-test.device-display-name" value="emulator (emulator-5554 - 13)"/>
     <property name="android-test.device-info-path" value="/demo-project/login/build/outputs/androidTest-results/managedDevice/debug/emulator/device-info.pb"/>
   </properties>
-  <testcase name="com.example.login.ExampleInstrumentedTest.useAppContext" classname="device_emulator-XXXX" time="0.100s">
+  <testcase name="com.example.login.ExampleInstrumentedTest.useAppContext" classname="device_emulator-5554" time="0.100s">
     <properties>
       <property name="android-test.logcat-path" value="/demo-project/login/build/outputs/androidTest-results/managedDevice/debug/emulator/logcat-com.example.login.ExampleInstrumentedTest-useAppContext.txt"/>
     </properties>
