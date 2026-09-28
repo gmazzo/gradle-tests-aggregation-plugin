@@ -78,13 +78,9 @@ fun Sync.reportsSpec(): CopySpec {
                     .replace(dataSortRegEx, "data-sort-value=\"100\"")
                     .replace(tookRegEx, "0.100s")
                     .replace(spansTimeRegEx, "2016-01-01 00:00")
-                    .replace(emulatorName, "emulator-XXXX")
                     .replace(rootDir, "")
                     .replace(androidHome, "~/.android/sdk")
             }
-        }
-        eachFile {
-            path = path.replace(emulatorName, "emulator-XXXX")
         }
         includeEmptyDirs = false
         doLast {
