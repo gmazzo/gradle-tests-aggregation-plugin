@@ -5,7 +5,7 @@ android-plugin = "9.5.0-alpha05"
 android-minSDK = "24"
 android-compileSDK = "37"
 androidx-lifecycle = "2.11.0"
-androidx-navigation = "2.10.1"
+androidx-navigation = "2.10.2"
 moshi = "1.15.2"
 screenshot-tests = "0.0.1-alpha16"
 
