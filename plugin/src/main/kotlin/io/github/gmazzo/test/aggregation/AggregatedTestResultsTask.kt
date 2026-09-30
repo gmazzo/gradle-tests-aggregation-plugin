@@ -96,7 +96,7 @@ public abstract class AggregatedTestResultsTask : DefaultTask() {
         if (!htmlRequired.getOrElse(true)) return
 
         val generator = objects.newInstance<GenericHtmlTestReportGenerator>(outputDir)
-        generator.generate(isolatedVariants.get().flatMap { it.binaryDataDirs })
+        generator.generate(isolatedVariants.get().flatMap { it.binaryDataDirs }.sorted())
 
         logger.lifecycle("View generated report at ${outputDir.resolve("index.html").toUri()}")
     }
