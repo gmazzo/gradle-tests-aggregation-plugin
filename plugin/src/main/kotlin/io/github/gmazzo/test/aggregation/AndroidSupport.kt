@@ -300,8 +300,8 @@ internal object AndroidSupport {
                 (this as? TestSuiteTestTask)?.coverageDir?.dir("coverage_data")?.orNull
 
             } catch (_: NoClassDefFoundError) {
-                jacocoDataFile
-            }
+                null
+            } ?: jacocoDataFile
 
     }
 
