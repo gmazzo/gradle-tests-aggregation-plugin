@@ -143,8 +143,8 @@ val checkReportsTask = tasks.register<Sync>("checkAggregatedReportsContent") {
         val expected = File(temporaryDir, "expects").collect()
         val actual = File(temporaryDir, "actual").collect()
         val diffs = (expected.keys + actual.keys).associateWith {
-            val expectedLines = expected[it]?.readLines().orEmpty()
-            val actualLines = actual[it]?.readLines().orEmpty()
+            val expectedLines = expected[it]?.readLines() ?: listOf("<missing file>")
+            val actualLines = actual[it]?.readLines() ?: listOf("<missing file>")
 
             when (actualLines) {
                 expectedLines -> null
