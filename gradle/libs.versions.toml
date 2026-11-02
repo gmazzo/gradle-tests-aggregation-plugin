@@ -7,7 +7,7 @@ android-compileSDK = "37"
 androidx-lifecycle = "2.11.0"
 androidx-navigation = "2.10.2"
 moshi = "1.15.2"
-screenshot-tests = "0.0.1-alpha16"
+screenshot-tests = "0.0.1-alpha17"
 
 [libraries]
 android-tools-screenshot-validation-api = { module = "com.android.tools.screenshot:screenshot-validation-api", version.ref = "screenshot-tests" }
