@@ -33,7 +33,7 @@ junit-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit" }
-mockk = { module = "io.mockk:mockk", version = "1.14.11" }
+mockk = { module = "io.mockk:mockk", version = "1.14.12" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
 moshi-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshi" }
 robolectric = "org.robolectric:robolectric:4.18"
